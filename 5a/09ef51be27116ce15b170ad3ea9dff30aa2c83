@@ -1,0 +1,61 @@
+pkg/models/tasks.go
+  s_0ae71c0f6ffecf::t_77c34db187ef1e 1365,1592
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_0ae71c0f6ffecf::t_4c4d6d7ef1456d 8,142-164
+  s_fe5626faec9c7d::t_b83c2bf3da5f04 165-166
+frontend/src/components/project/views/ProjectKanban.vue
+  s_0ae71c0f6ffecf::t_e73a4503e43fcd 645
+  s_0ae71c0f6ffecf::t_284413d22c6860 646,654,659
+frontend/src/client/queries/taskCache.test.ts
+  s_0ae71c0f6ffecf::t_fcc742354eaf07 245-307
+frontend/src/client/queries/taskMutations.test.ts
+  s_0ae71c0f6ffecf::t_8996488ecbd698 510
+pkg/models/task_position.go
+  s_0ae71c0f6ffecf::t_3ebdce9c7d7c1b 592-593,633-634,653,655-656,669,792
+frontend/tests/factories/task_positions.ts
+  s_0ae71c0f6ffecf::t_4c4d6d7ef1456d 1-13
+frontend/src/client/queries/taskMutations.ts
+  s_0ae71c0f6ffecf::t_e01789151a8e1c 200-201,218-219
+pkg/models/listeners_test.go
+  s_0ae71c0f6ffecf::t_d67518dab52f5c 166-167
+pkg/models/saved_filter_positions_test.go
+  s_0ae71c0f6ffecf::t_d67518dab52f5c 383-385
+  s_0ae71c0f6ffecf::t_77c34db187ef1e 96
+  s_0ae71c0f6ffecf::t_20451d260b6349 411,424,428,431-435
+pkg/models/saved_filters.go
+  s_0ae71c0f6ffecf::t_77c34db187ef1e 461
+pkg/models/tasks_test.go
+  s_0ae71c0f6ffecf::t_7e9013957c296d 234-262,465-495
+frontend/src/client/queries/taskCache.ts
+  s_0ae71c0f6ffecf::t_a5a85f6c363608 145-157,193,197
+  s_0ae71c0f6ffecf::t_284413d22c6860 11
+pkg/models/task_position_test.go
+  s_0ae71c0f6ffecf::t_88b2a6aac74061 20
+  s_0ae71c0f6ffecf::t_2aabd8084128ed 590-591,593-594,599
+pkg/models/bulk_task_create_test.go
+  s_0ae71c0f6ffecf::t_d67518dab52f5c 107,112-116,119,125-126,129,134-135,137,141,146-148,151,156,166-168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a09ef51be27116ce15b170ad3ea9dff30aa2c83",
+  "prompts": {},
+  "sessions": {
+    "s_0ae71c0f6ffecf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9f172c3b-7615-41f3-800f-77be7596d7a6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Герман Щечкин <h.schechkin@bestdoctor.ru>"
+    },
+    "s_fe5626faec9c7d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dc3e03a1-f3a7-4819-a44e-4bd21419af98",
+        "model": "unknown"
+      },
+      "human_author": "Герман Щечкин <h.schechkin@bestdoctor.ru>"
+    }
+  }
+}
