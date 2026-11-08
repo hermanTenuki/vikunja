@@ -1,0 +1,104 @@
+pkg/models/tasks_test.go
+  s_98748db0d03d3d::t_e137b8a10f2701 1934-2038
+pkg/migration/20261107170233.go
+  s_98748db0d03d3d::t_178e3059fc1df2 20-21,26-27,30-31,37,39-61
+  s_98748db0d03d3d::t_57853dda6700dc 1-19,22-25,28-29,32-36,38,62-67
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_98748db0d03d3d::t_e5a25218a94fc4 673-703
+pkg/modules/migration/vikunja-file/roundtrip_test.go
+  s_98748db0d03d3d::t_982c934098f0c1 28,145-221
+  s_98748db0d03d3d::t_eb94eb3ec804c0 222
+frontend/src/helpers/task.test.ts
+  s_98748db0d03d3d::t_66cd5a48fcad45 126-127,129-135,138-154
+  s_98748db0d03d3d::t_a3a732e5b8e74a 30-32
+frontend/src/helpers/time/formatShortDuration.test.ts
+  s_98748db0d03d3d::t_66cd5a48fcad45 1-22,26-47
+  s_98748db0d03d3d::t_3fd5751f061dc7 23-25
+pkg/modules/migration/create_from_structure_test.go
+  s_98748db0d03d3d::t_982c934098f0c1 499-544
+frontend/src/helpers/time/formatShortDuration.ts
+  s_98748db0d03d3d::t_63c0995e09200a 1-6,8-24,26,28
+  s_98748db0d03d3d::t_ee176fd7188c0c 27
+  s_98748db0d03d3d::t_f71376a8efa335 7,25
+pkg/models/saved_filters.go
+  s_98748db0d03d3d::t_b60ef3cd277b60 743
+pkg/models/kanban.go
+  s_98748db0d03d3d::t_b60ef3cd277b60 420-421
+pkg/models/kanban_test.go
+  s_98748db0d03d3d::t_17221430f18580 552-587
+  s_98748db0d03d3d::t_e4aa0bc3bc4db6 469-548,550-551,588
+  s_98748db0d03d3d::t_0ef824e8eaaed5 549
+pkg/models/listeners_test.go
+  s_98748db0d03d3d::t_bc765493aa3fa6 881-933
+pkg/models/project_duplicate.go
+  s_98748db0d03d3d::t_532612e2eda3e3 22
+  s_98748db0d03d3d::t_b60ef3cd277b60 274
+frontend/src/client/queries/taskCache.ts
+  s_98748db0d03d3d::t_a7b03de122797a 188,190-191,204-207,210-211,213-216,218
+  s_98748db0d03d3d::t_ee176fd7188c0c 208,217
+  s_98748db0d03d3d::t_6e739739020d23 209,212
+  s_98748db0d03d3d::t_d8b7a98be43fdc 189
+  s_98748db0d03d3d::t_76a150edd8efed 219-220
+pkg/models/project_view_test.go
+  s_98748db0d03d3d::t_bc765493aa3fa6 543-559
+pkg/models/kanban_task_bucket.go
+  s_98748db0d03d3d::t_532612e2eda3e3 85-92,94-98,104-114,177-181
+  s_98748db0d03d3d::t_b60ef3cd277b60 44-45
+frontend/src/i18n/lang/ru-RU.json
+  s_98748db0d03d3d::t_15f68849636171 515-516
+pkg/models/kanban_task_bucket_test.go
+  s_98748db0d03d3d::t_8c126d330ab429 820-823
+  s_98748db0d03d3d::t_ef1f4eaa4f137b 628-819,824-832
+frontend/src/components/tasks/partials/KanbanCard.test.ts
+  s_98748db0d03d3d::t_558240c868d69f 6,10,30-31,90
+pkg/models/tasks.go
+  s_98748db0d03d3d::t_3672e9ceca67db 887
+  s_98748db0d03d3d::t_1056589f3939eb 789-813,888-890
+  s_98748db0d03d3d::t_532612e2eda3e3 1653-1657
+  s_98748db0d03d3d::t_b60ef3cd277b60 167-168,1386
+  s_98748db0d03d3d::t_f109d4393aee37 891
+frontend/src/client/queries/taskMutations.ts
+  s_98748db0d03d3d::t_a7b03de122797a 37,173
+  s_98748db0d03d3d::t_1f419033b470f3 174
+pkg/models/project_duplicate_test.go
+  s_98748db0d03d3d::t_ffb1b1d46eeeb9 90-115
+pkg/modules/migration/create_from_structure.go
+  s_98748db0d03d3d::t_b60ef3cd277b60 739-742,752
+frontend/src/client/queries/taskMutations.test.ts
+  s_98748db0d03d3d::t_a85f08cfaf72ad 407
+  s_98748db0d03d3d::t_a3a732e5b8e74a 1,109,393-400,403-406,408-419,422-436,509-510,513,518
+  s_98748db0d03d3d::t_558240c868d69f 401-402,420-421
+  s_98748db0d03d3d::t_8983c1081ade8b 437,508,511-512,514-517,519
+pkg/models/project_view.go
+  s_98748db0d03d3d::t_532612e2eda3e3 543,548,550-551,554
+frontend/src/components/tasks/partials/KanbanCard.vue
+  s_98748db0d03d3d::t_1c15c915cd881f 111-120,162,212,214-215,217-218,425-429
+  s_98748db0d03d3d::t_ee176fd7188c0c 142,210-211,213,216
+  s_98748db0d03d3d::t_c87cae13f9d133 430-431
+pkg/migration/20261107170233_test.go
+  s_98748db0d03d3d::t_a1a010c601c451 1-96,98-102,106-182
+  s_98748db0d03d3d::t_c1784a2f955da8 97,103-105
+frontend/src/i18n/lang/en.json
+  s_98748db0d03d3d::t_15f68849636171 636-637
+frontend/src/helpers/task.ts
+  s_98748db0d03d3d::t_a7b03de122797a 138,140-141
+  s_98748db0d03d3d::t_d8b7a98be43fdc 74,139
+frontend/src/client/generated/types.gen.ts
+  s_98748db0d03d3d::t_18863f46fb9f40 2286-2289,2470-2473,2635-2638,3355-3358
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e9067c43070328818603bc5f45fe896218b8309",
+  "prompts": {},
+  "sessions": {
+    "s_98748db0d03d3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6d0c64a-34bf-432a-8876-6277d06b787c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
