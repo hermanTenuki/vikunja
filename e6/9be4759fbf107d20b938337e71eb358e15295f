@@ -1,0 +1,47 @@
+frontend/tests/e2e/project/project-view-table.spec.ts
+  s_6094d01397d164::t_0c13a9315b63d9 136-139
+frontend/src/components/project/views/ProjectGantt.vue
+  s_6094d01397d164::t_1902f9f101588a 84,114,127-128,134-135
+frontend/src/components/tasks/AddTask.vue
+  s_6094d01397d164::t_b701711379d642 81,105,139,241
+  s_6094d01397d164::t_56e2f34bedc022 140-141,242,252-255
+  s_6094d01397d164::t_f16357db977fc4 256
+frontend/src/components/project/views/ProjectKanban.vue
+  s_6094d01397d164::t_a3982c3e1f42f6 326,382,641-642,654-655
+frontend/src/composables/useOpenCreatedTask.test.ts
+  s_6094d01397d164::t_bbd9282e3ad11f 1-99
+frontend/tests/e2e/project/project-view-list.spec.ts
+  s_6094d01397d164::t_0c13a9315b63d9 33-38,56-57
+frontend/src/views/tasks/TaskDetailView.vue
+  s_6094d01397d164::t_1902f9f101588a 724,752,1281,1285
+frontend/src/components/quick-actions/QuickActions.vue
+  s_6094d01397d164::t_1902f9f101588a 157,186,671,694
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_6094d01397d164::t_0c13a9315b63d9 138-140
+frontend/src/components/project/views/ProjectKanban.test.ts
+  s_6094d01397d164::t_735166339c0264 80-86
+  s_6094d01397d164::t_c826beefb928e9 78-79,87,89,169,303-317
+  s_6094d01397d164::t_c1a5b7612dec68 318-319
+frontend/src/composables/useOpenCreatedTask.ts
+  s_6094d01397d164::t_b8d378786290e2 1-4,6-8,10-27,30-31,38,50-51,53
+  s_6094d01397d164::t_b8ff4564772917 28-29
+  s_6094d01397d164::t_4ce08df68ab0fa 5,9,32-37,39-49,52
+frontend/tests/e2e/task/overview.spec.ts
+  s_6094d01397d164::t_0c13a9315b63d9 159-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e69be4759fbf107d20b938337e71eb358e15295f",
+  "prompts": {},
+  "sessions": {
+    "s_6094d01397d164": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b02c8e3b-caba-4da4-b77b-86d02d95958e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
