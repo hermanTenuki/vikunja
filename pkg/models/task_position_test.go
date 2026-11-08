@@ -17,6 +17,7 @@
 package models
 
 import (
+	"math"
 	"testing"
 
 	"code.vikunja.io/api/pkg/db"
@@ -586,17 +587,16 @@ func TestSetTaskInBucketInViewsResolvesConflicts(t *testing.T) {
 	// Pick the first view
 	view := views[0]
 
-	// Get the current lowest position to predict the new task's position
-	lowestPosition := &TaskPosition{}
+	// Get the current highest position to predict the new task's position
+	highestPosition := &TaskPosition{}
 	exists, err := s.Where("project_view_id = ?", view.ID).
-		OrderBy("position asc").
-		Get(lowestPosition)
+		OrderBy("position desc").
+		Get(highestPosition)
 	require.NoError(t, err)
 
 	require.True(t, exists)
-	require.GreaterOrEqual(t, lowestPosition.Position, MinPositionSpacing)
 
-	predictedPosition := lowestPosition.Position / 2
+	predictedPosition := highestPosition.Position + math.Pow(2, 16)
 
 	// Insert a conflicting position at the predicted value
 	_, err = s.Insert(&TaskPosition{

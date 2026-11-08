@@ -1395,7 +1395,7 @@ func setTasksInBucketInViews(s *xorm.Session, views []*ProjectView, tasks []*Tas
 
 	positions := []*TaskPosition{}
 	for _, view := range views {
-		viewPositions, err := calculateNewPositionsForTasks(s, a, tasks, view)
+		viewPositions, err := calculateNewPositionsForTasks(s, tasks, view)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1622,7 +1622,7 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 				return err
 			}
 
-			tp, err := calculateNewPositionForTask(s, a, t, view)
+			tp, err := calculateNewPositionForTask(s, t, view)
 			if err != nil {
 				return err
 			}

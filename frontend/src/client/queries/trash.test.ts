@@ -203,10 +203,8 @@ it('patches the restored card into scrolled boards and refetches only filter boa
 	observers.forEach(stop => stop())
 
 	const board = client.getQueryData<BoardData>(kanbanKeys.board(5, 6))!
-	expect(board.buckets[0].tasks.map(task => task.id)).toEqual([
-		2,
-		1,
-	])
+	// Restored cards land at the bottom like new ones, so a partially loaded bucket only counts it until the next page.
+	expect(board.buckets[0].tasks.map(task => task.id)).toEqual([1])
 	expect(board.buckets[0].count).toBe(31)
 	expect(board.pages).toEqual({3: 2})
 	expect(readBoard).toHaveBeenCalledTimes(1)
@@ -256,11 +254,11 @@ it('patches the restored card with the full task detail', async () => {
 	await client.getMutationCache().build(client, restoreTaskMutationOptions()).execute(2)
 
 	expect(sdk.tasksRead).toHaveBeenCalledWith(expect.objectContaining({path: {task: 2}}))
-	expect(client.getQueryData<BoardData>(kanbanKeys.board(5, 6))?.buckets[0].tasks[0]).toMatchObject({
+	expect(client.getQueryData<BoardData>(kanbanKeys.board(5, 6))?.buckets[0].tasks[1]).toMatchObject({
 		id: 2,
 		identifier: 'P-2',
 		labels: [{id: 7}],
-		position: 200,
+		position: 400 + 2 ** 16,
 	})
 })
 

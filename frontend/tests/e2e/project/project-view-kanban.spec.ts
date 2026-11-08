@@ -5,6 +5,7 @@ import {ProjectFactory} from '../../factories/project'
 import {TaskFactory} from '../../factories/task'
 import {ProjectViewFactory} from '../../factories/project_view'
 import {TaskBucketFactory} from '../../factories/task_buckets'
+import {TaskPositionFactory} from '../../factories/task_positions'
 import {createTasksWithPriorities, createTasksWithSearch} from '../../support/filterTestHelpers'
 import {updateUserSettings} from '../../support/updateUserSettings'
 
@@ -139,6 +140,35 @@ test.describe('Project View Kanban', () => {
 		await expect(page).toHaveURL(/\/tasks\/\d+$/)
 		await expect(page.locator('.modal-content .task-view .heading')).toContainText('New Task')
 		await expect(page.locator('.kanban .bucket').first()).toContainText('New Task')
+	})
+
+	test('Adds a new task to the bottom of its bucket', async ({authenticatedPage: page}) => {
+		const tasks = await createTaskWithBuckets(buckets, 3)
+		await TaskPositionFactory.create(tasks.length, {
+			task_id: (i: number) => tasks[i - 1].id,
+			project_view_id: 4,
+			position: (i: number) => [100, 250, 300][i - 1],
+		})
+		await page.goto('/projects/1/4')
+
+		const bucket = page.locator('.kanban .bucket').filter({hasText: buckets[0].title})
+		await bucket.locator('.bucket-footer .button').filter({hasText: 'Add another task'}).click()
+		const input = bucket.locator('.bucket-footer .field .control input.input')
+		await input.fill('Bottom Task')
+		await input.press('Enter')
+
+		// The new card opens as a modal over the board; the board underneath already shows it last
+		await expect(page).toHaveURL(/\/tasks\/\d+$/)
+		const cards = bucket.locator('.tasks .task')
+		await expect(cards).toHaveCount(4)
+		await expect(cards.last()).toContainText('Bottom Task')
+
+		// A fresh load of the board keeps it at the bottom
+		await page.goto('/projects/1/4')
+		await page.reload()
+		await expect(cards).toHaveCount(4)
+		await expect(cards.last()).toContainText('Bottom Task')
+		await expect(cards.first()).toContainText(tasks[0].title)
 	})
 
 	test('Can create a new bucket', async ({authenticatedPage: page}) => {

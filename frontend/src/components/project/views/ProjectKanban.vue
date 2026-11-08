@@ -665,7 +665,8 @@ async function addTaskToBucket(bucketId: number) {
 		project_id: projectIdWithFallback.value,
 	})
 	newTaskText.value = ''
-	scrollTaskContainerToTop(bucketId)
+	await nextTick()
+	scrollTaskContainerToBottom(bucketId)
 
 	const bucket = getBucketById(bucketId)
 	if (bucket && isBucketFull(bucket)) {
@@ -675,12 +676,12 @@ async function addTaskToBucket(bucketId: number) {
 	await openCreatedTask(task.id)
 }
 
-function scrollTaskContainerToTop(bucketId: number) {
+function scrollTaskContainerToBottom(bucketId: number) {
 	const bucketEl = taskContainerRefs.value[bucketId]
 	if (!bucketEl) {
 		return
 	}
-	bucketEl.scrollTop = 0
+	bucketEl.scrollTop = bucketEl.scrollHeight
 }
 
 async function createNewBucket() {

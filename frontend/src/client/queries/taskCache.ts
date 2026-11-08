@@ -8,7 +8,7 @@ import {
 	type TaskFilterParams,
 	type TaskResponse,
 } from './tasks'
-import {kanbanKeys, type BoardData} from './kanban'
+import {bucketHasMore, kanbanKeys, type BoardData, type BucketResponse} from './kanban'
 import {totalPagesFor} from './pagination'
 import {getCachedProject} from './projects'
 
@@ -142,10 +142,19 @@ export function removeTaskEverywhere(client: QueryClient, id: number) {
 	)
 }
 
-// Mirrors the server, which places a task without a stored position above the view's lowest one.
-function positionAboveBoard(board: BoardData, task: TaskResponse): number {
-	const lowest = Math.min(...board.buckets.flatMap(bucket => bucket.tasks.map(item => item.position)))
-	return Number.isFinite(lowest) && lowest > 0 ? lowest / 2 : task.index * 2 ** 16
+// Mirrors the server, which places a task without a stored position below the view's highest one.
+function positionBelowBoard(board: BoardData, task: TaskResponse): number {
+	const highest = Math.max(...board.buckets.flatMap(bucket => bucket.tasks.map(item => item.position)))
+	return Number.isFinite(highest) && highest > 0 ? highest + 2 ** 16 : task.index * 2 ** 16
+}
+
+// Cards are ordered by position. A card sorting after the last loaded one of a partially loaded bucket
+// arrives with the next page, so only the count reflects it.
+function insertIntoBucket(bucket: BucketResponse, card: TaskResponse): BucketResponse {
+	const at = bucket.tasks.findIndex(item => item.position > card.position)
+	if (at === -1 && bucketHasMore(bucket)) return {...bucket, count: bucket.count + 1}
+	const tasks = at === -1 ? [...bucket.tasks, card] : [...bucket.tasks.slice(0, at), card, ...bucket.tasks.slice(at)]
+	return {...bucket, count: bucket.count + 1, tasks}
 }
 
 // Filter buckets are server-decided and a filtered or searched board may not match the task.
@@ -181,14 +190,11 @@ export function insertTaskIntoBoards(client: QueryClient, created: Task) {
 		// A card left over from another tab would otherwise show twice.
 		const deduped = removeFromBoard(board, task.id, dropMembership) ?? board
 		const position = task.positions?.find(item => item.project_view_id === viewId)?.position
-			?? (task.position || positionAboveBoard(deduped, task))
+			?? (task.position || positionBelowBoard(deduped, task))
 		client.setQueryData(key, {
 			...deduped,
 			buckets: deduped.buckets.map(bucket => bucket.id === target
-				? {...bucket, count: bucket.count + 1, tasks: [
-					{...task, bucket_id: target, position, bucket_entered_at: new Date().toISOString()},
-					...bucket.tasks,
-				]}
+				? insertIntoBucket(bucket, {...task, bucket_id: target, position, bucket_entered_at: new Date().toISOString()})
 				: bucket),
 		})
 	}

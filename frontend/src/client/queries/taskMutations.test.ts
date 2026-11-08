@@ -201,15 +201,16 @@ describe('task mutations', () => {
 	it('retains successful bulk batches and input alignment after partial failure', async () => {
 		const client = new QueryClient()
 		sdk.tasksBulkCreate.mockImplementation(({body}) => {
-			if (body.tasks[0].title === '0') throw new Error('failed batch')
+			if (body.tasks[0].title === '100') throw new Error('failed batch')
 			return {data: {tasks: body.tasks.map((task: Task) => ({...task, id: 7}))}}
 		})
 		const input = Array.from({length: 101}, (_, index) => ({title: String(index), project_id: 1}))
 		const result = await client.getMutationCache()
 			.build(client, bulkCreateTasksMutationOptions())
 			.execute(input)
-		expect(result.tasks[100]).toMatchObject({id: 7, title: '100'})
-		expect(result.tasks.slice(0, 100)).toEqual(Array(100).fill(null))
+		expect(result.tasks[0]).toMatchObject({id: 7, title: '0'})
+		expect(result.tasks[99]).toMatchObject({id: 7, title: '99'})
+		expect(result.tasks[100]).toBeNull()
 		expect(result.error).toBeInstanceOf(Error)
 	})
 
@@ -442,7 +443,8 @@ describe('task mutations', () => {
 			.build(client, createTaskMutationOptions())
 			.execute({title: 'new', project_id: 1, bucket_id: 3})
 		const data = client.getQueryData<BoardData>(board.queryKey)!
-		expect(data.buckets[0].tasks[0]).toMatchObject({id: 99, bucket_id: 3})
+		// The bucket is fully loaded, so the new card is appended below the last one.
+		expect(data.buckets[0].tasks[30]).toMatchObject({id: 99, bucket_id: 3})
 		expect(data.buckets[0].tasks).toHaveLength(31)
 		expect(data.buckets[0].count).toBe(31)
 		expect(data.pages).toEqual({3: 2})
@@ -565,7 +567,7 @@ describe('task mutations', () => {
 		expect(client.getQueryData<BoardData>(kanbanKeys.board(1, 5))?.buckets[0].tasks[0].position).toBe(100)
 	})
 
-	it('keeps the input order of a bulk batch by inserting it back to front', async () => {
+	it('keeps the input order of a bulk batch by inserting it front to back', async () => {
 		const client = await seedDefaultBucketBoards()
 		sdk.tasksBulkCreate.mockImplementation(({body}) => ({
 			data: {

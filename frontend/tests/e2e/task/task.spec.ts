@@ -17,6 +17,7 @@ import {TaskAttachmentFactory} from '../../factories/task_attachments'
 import {TaskReminderFactory} from '../../factories/task_reminders'
 import {createDefaultViews} from '../project/prepareProjects'
 import {TaskBucketFactory} from '../../factories/task_buckets'
+import {TaskPositionFactory} from '../../factories/task_positions'
 import {pasteFile, pasteHtmlFromClipboard} from '../../support/commands'
 import {login} from '../../support/authenticateUser'
 import type {Locator, Page} from '@playwright/test'
@@ -105,16 +106,22 @@ test.describe('Task', () => {
 		await expect(page.locator('.tasks .task .tasktext').first()).toContainText('New Task')
 	})
 
-	test('Inserts new tasks at the top of the project', async ({authenticatedPage: page}) => {
-		await TaskFactory.create(1)
+	test('Inserts new tasks at the bottom of the project', async ({authenticatedPage: page}) => {
+		const [existing] = await TaskFactory.create(1)
+		await TaskPositionFactory.create(1, {task_id: existing.id, project_view_id: 1, position: 100})
 
 		await page.goto('/projects/1/1')
 		await expect(page.locator('.project-is-empty-notice')).not.toBeVisible()
 		await page.locator('.input[placeholder="Add a task…"]').fill('New Task')
 		await page.locator('.button').filter({hasText: 'Add'}).click()
 
-		await page.waitForTimeout(1000) // Wait for the request
-		await expect(page.locator('.tasks .task .tasktext').first()).toContainText('New Task')
+		// A single new task opens as a page; back in the list it sits below the existing one
+		await expect(page).toHaveURL(/\/tasks\/\d+$/)
+		await page.goBack()
+		const titles = page.locator('.tasks .task .tasktext')
+		await expect(titles).toHaveCount(2)
+		await expect(titles.last()).toContainText('New Task')
+		await expect(titles.first()).toContainText(existing.title)
 	})
 
 	test('Marks a task as done', async ({authenticatedPage: page}) => {

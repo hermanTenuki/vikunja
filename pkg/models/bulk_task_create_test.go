@@ -104,65 +104,34 @@ func TestBulkTaskCreation_Create(t *testing.T) {
 		events.AssertDispatched(t, &TasksBatchCreatedEvent{})
 	})
 
-	t.Run("batch lands on top of a view with existing positions", func(t *testing.T) {
+	t.Run("batch lands at the bottom of a view with existing positions", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)
 		s := db.NewSession()
 		defer s.Close()
 
+		highest := &TaskPosition{}
+		exists, err := s.Where("project_view_id = ?", 1).OrderBy("position desc").Get(highest)
+		require.NoError(t, err)
+		require.True(t, exists)
+
 		btc := &BulkTaskCreation{
 			ProjectID: 1,
-			Tasks:     []*Task{{Title: "top one"}, {Title: "top two"}},
+			Tasks:     []*Task{{Title: "bottom one"}, {Title: "bottom two"}},
 		}
 		require.NoError(t, btc.Create(s, usr))
 		require.NoError(t, s.Commit())
 
-		// View 1's lowest fixture position is 2 → step 2/3, new tasks below it.
 		positions := positionsForTasks(t, s, 1, []int64{btc.Tasks[0].ID, btc.Tasks[1].ID})
-		assert.Less(t, positions[btc.Tasks[0].ID], positions[btc.Tasks[1].ID])
-		assert.Less(t, positions[btc.Tasks[1].ID], 2.0)
+		assert.Greater(t, positions[btc.Tasks[0].ID], highest.Position)
+		assert.Greater(t, positions[btc.Tasks[1].ID], positions[btc.Tasks[0].ID])
 	})
 
-	t.Run("batch lands on top of a crowded view forcing a recalculation", func(t *testing.T) {
+	t.Run("task flipped to done gets a single position", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)
 		s := db.NewSession()
 		defer s.Close()
 
-		_, err := s.Where("project_view_id = ? AND task_id = ?", 1, 1).Delete(&TaskPosition{})
-		require.NoError(t, err)
-		_, err = s.Insert(&TaskPosition{TaskID: 1, ProjectViewID: 1, Position: MinPositionSpacing / 2})
-		require.NoError(t, err)
-
-		btc := &BulkTaskCreation{
-			ProjectID: 1,
-			Tasks:     []*Task{{Title: "crowded one"}, {Title: "crowded two"}},
-		}
-		require.NoError(t, btc.Create(s, usr))
-		require.NoError(t, s.Commit())
-
-		newIDs := []int64{btc.Tasks[0].ID, btc.Tasks[1].ID}
-		positions := positionsForTasks(t, s, 1, newIDs)
-		require.Len(t, positions, 2)
-		assert.Less(t, positions[newIDs[0]], positions[newIDs[1]])
-
-		others := []*TaskPosition{}
-		err = s.Where("project_view_id = ?", 1).NotIn("task_id", newIDs).Find(&others)
-		require.NoError(t, err)
-		require.NotEmpty(t, others)
-		for _, p := range others {
-			assert.Less(t, positions[newIDs[1]], p.Position)
-		}
-	})
-
-	t.Run("task flipped to done keeps its recalculated position", func(t *testing.T) {
-		db.LoadAndAssertFixtures(t)
-		s := db.NewSession()
-		defer s.Close()
-
-		// Force view 4 into a recalculation during the batch's position calculation.
-		_, err := s.Insert(&TaskPosition{TaskID: 1, ProjectViewID: 4, Position: MinPositionSpacing / 2})
-		require.NoError(t, err)
-
-		// Bucket 3 is view 4's done bucket, so the task gets a position there before the recalculation runs.
+		// Bucket 3 is view 4's done bucket, so the task gets a position there before the batch positions are calculated.
 		btc := &BulkTaskCreation{
 			ProjectID: 1,
 			Tasks:     []*Task{{Title: "into done bucket", BucketID: 3}},
@@ -172,10 +141,9 @@ func TestBulkTaskCreation_Create(t *testing.T) {
 
 		assert.True(t, btc.Tasks[0].Done)
 
-		positions := positionsForTasks(t, s, 4, []int64{btc.Tasks[0].ID, 1})
-		require.Len(t, positions, 2)
-		// The done task keeps the slot the recalculation gave it instead of moving back to the top.
-		assert.Less(t, positions[1], positions[btc.Tasks[0].ID])
+		count, err := s.Where("project_view_id = ? AND task_id = ?", 4, btc.Tasks[0].ID).Count(&TaskPosition{})
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), count)
 	})
 
 	t.Run("explicit bucket", func(t *testing.T) {

@@ -242,4 +242,67 @@ describe('task cache reconciliation', () => {
 			},
 		])
 	})
+	describe('inserting a created card into a bucket', () => {
+		function seedBoard(bucket: {count: number, tasks: {id: number, position: number}[]}) {
+			const client = new QueryClient()
+			const board = kanbanKeys.board(1, 2)
+			client.setQueryData(projectKeys.detail(1), {
+				id: 1,
+				views: [{id: 2, bucket_configuration_mode: 'manual', default_bucket_id: 4}],
+			})
+			client.setQueryData(board, {
+				buckets: [normalizeBucket({id: 4, ...bucket})],
+				pages: {4: 1},
+			})
+			return {client, board}
+		}
+		const created = (position: number) => ({
+			id: 9,
+			project_id: 1,
+			positions: [{task_id: 9, project_view_id: 2, position}],
+		})
+
+		it('places the card by its position instead of on top', () => {
+			const {client, board} = seedBoard({count: 3, tasks: [
+				{id: 1, position: 100},
+				{id: 2, position: 250},
+				{id: 3, position: 300},
+			]})
+			insertTaskIntoBoards(client, created(400))
+			insertTaskIntoBoards(client, {...created(275), id: 10})
+			const bucket = client.getQueryData<BoardData>(board)?.buckets[0]
+			expect(bucket?.tasks.map(task => task.id)).toEqual([1, 2, 10, 3, 9])
+			expect(bucket?.count).toBe(5)
+		})
+		it('only counts a card that sorts after the last loaded card of a partially loaded bucket', () => {
+			const {client, board} = seedBoard({count: 40, tasks: [
+				{id: 1, position: 100},
+				{id: 2, position: 250},
+			]})
+			insertTaskIntoBoards(client, created(400))
+			const bucket = client.getQueryData<BoardData>(board)?.buckets[0]
+			expect(bucket?.tasks.map(task => task.id)).toEqual([1, 2])
+			expect(bucket?.count).toBe(41)
+		})
+		it('still inserts a card that sorts inside the loaded part of a partially loaded bucket', () => {
+			const {client, board} = seedBoard({count: 40, tasks: [
+				{id: 1, position: 100},
+				{id: 2, position: 250},
+			]})
+			insertTaskIntoBoards(client, created(150))
+			const bucket = client.getQueryData<BoardData>(board)?.buckets[0]
+			expect(bucket?.tasks.map(task => task.id)).toEqual([1, 9, 2])
+			expect(bucket?.count).toBe(41)
+		})
+		it('falls back to the bottom of the board when the response carries no position', () => {
+			const {client, board} = seedBoard({count: 2, tasks: [
+				{id: 1, position: 100},
+				{id: 2, position: 250},
+			]})
+			insertTaskIntoBoards(client, {id: 9, project_id: 1, index: 3})
+			const bucket = client.getQueryData<BoardData>(board)?.buckets[0]
+			expect(bucket?.tasks.map(task => task.id)).toEqual([1, 2, 9])
+			expect(bucket?.tasks[2].position).toBeGreaterThan(250)
+		})
+	})
 })

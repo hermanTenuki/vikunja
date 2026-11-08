@@ -589,8 +589,8 @@ func recalculateTaskPositionsForRepair(s *xorm.Session, view *ProjectView) error
 	return nil
 }
 
-func calculateNewPositionForTask(s *xorm.Session, a web.Auth, t *Task, view *ProjectView) (*TaskPosition, error) {
-	positions, err := calculateNewPositionsForTasks(s, a, []*Task{t}, view)
+func calculateNewPositionForTask(s *xorm.Session, t *Task, view *ProjectView) (*TaskPosition, error) {
+	positions, err := calculateNewPositionsForTasks(s, []*Task{t}, view)
 	if err != nil {
 		return nil, err
 	}
@@ -630,8 +630,8 @@ func defaultPositionsForEmptyView(tasks []*Task, viewID int64) []*TaskPosition {
 	return positions
 }
 
-// calculateNewPositionsForTasks places a batch on top of one view, keeping explicit positions the migration importer seeds to preserve export order (#3297).
-func calculateNewPositionsForTasks(s *xorm.Session, a web.Auth, tasks []*Task, view *ProjectView) ([]*TaskPosition, error) {
+// calculateNewPositionsForTasks places a batch below the last task of one view, in input order, keeping explicit positions the migration importer seeds to preserve export order (#3297).
+func calculateNewPositionsForTasks(s *xorm.Session, tasks []*Task, view *ProjectView) ([]*TaskPosition, error) {
 	positions := make([]*TaskPosition, 0, len(tasks))
 	needDefault := make([]*Task, 0, len(tasks))
 	for _, t := range tasks {
@@ -650,10 +650,10 @@ func calculateNewPositionsForTasks(s *xorm.Session, a web.Auth, tasks []*Task, v
 		return positions, nil
 	}
 
-	lowestPosition := &TaskPosition{}
+	highestPosition := &TaskPosition{}
 	exists, err := s.Where("project_view_id = ?", view.ID).
-		OrderBy("position asc").
-		Get(lowestPosition)
+		OrderBy("position desc").
+		Get(highestPosition)
 	if err != nil {
 		return nil, err
 	}
@@ -662,61 +662,11 @@ func calculateNewPositionsForTasks(s *xorm.Session, a web.Auth, tasks []*Task, v
 		return append(positions, defaultPositionsForEmptyView(needDefault, view.ID)...), nil
 	}
 
-	step := lowestPosition.Position / float64(len(needDefault)+1)
-	if step < MinPositionSpacing {
-		// The recalculation persists positions for the batch's own rows too; drop only the ones it did not have before, so rows written earlier in this creation (moveTaskToDoneBuckets) survive.
-		batchIDs := make([]int64, 0, len(tasks))
-		for _, t := range tasks {
-			batchIDs = append(batchIDs, t.ID)
-		}
-
-		preexisting := []*TaskPosition{}
-		err = s.Where("project_view_id = ?", view.ID).In("task_id", batchIDs).Find(&preexisting)
-		if err != nil {
-			return nil, err
-		}
-		hadPosition := make(map[int64]bool, len(preexisting))
-		for _, p := range preexisting {
-			hadPosition[p.TaskID] = true
-		}
-
-		err = RecalculateTaskPositions(s, view, a)
-		if err != nil {
-			return nil, err
-		}
-
-		recalculated := make([]int64, 0, len(batchIDs))
-		for _, id := range batchIDs {
-			if !hadPosition[id] {
-				recalculated = append(recalculated, id)
-			}
-		}
-		if len(recalculated) > 0 {
-			_, err = s.Where("project_view_id = ?", view.ID).In("task_id", recalculated).Delete(&TaskPosition{})
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		lowestPosition = &TaskPosition{}
-		exists, err = s.Where("project_view_id = ?", view.ID).
-			OrderBy("position asc").
-			Get(lowestPosition)
-		if err != nil {
-			return nil, err
-		}
-		if !exists {
-			return append(positions, defaultPositionsForEmptyView(needDefault, view.ID)...), nil
-		}
-
-		step = lowestPosition.Position / float64(len(needDefault)+1)
-	}
-
 	for i, t := range needDefault {
 		positions = append(positions, &TaskPosition{
 			TaskID:        t.ID,
 			ProjectViewID: view.ID,
-			Position:      step * float64(i+1),
+			Position:      highestPosition.Position + math.Pow(2, 16)*float64(i+1),
 		})
 	}
 
@@ -791,7 +741,7 @@ func DeleteOrphanedTaskPositions(s *xorm.Session, dryRun bool) (count int64, err
 // filter which don't have one in its view yet. This must run before the fetch query: healing
 // afterwards means the query sorts fresh matches last (NULL position) and they jump to the top
 // on the next fetch once the position row exists.
-func ensureTaskPositionsForSavedFilterView(s *xorm.Session, a web.Auth, projects []*Project, view *ProjectView, opts *taskSearchOptions) (err error) {
+func ensureTaskPositionsForSavedFilterView(s *xorm.Session, projects []*Project, view *ProjectView, opts *taskSearchOptions) (err error) {
 	if len(projects) == 0 {
 		return nil
 	}
@@ -839,7 +789,7 @@ func ensureTaskPositionsForSavedFilterView(s *xorm.Session, a web.Auth, projects
 		return err
 	}
 
-	positions, err := calculateNewPositionsForTasks(s, a, tasks, view)
+	positions, err := calculateNewPositionsForTasks(s, tasks, view)
 	if err != nil {
 		return err
 	}

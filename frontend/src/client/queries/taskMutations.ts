@@ -200,8 +200,8 @@ export function bulkCreateTasksMutationOptions() {
 			for (const [project, entries] of groups) {
 				const batches = []
 				for (let index = 0; index < entries.length; index += 100) batches.push(entries.slice(index, index + 100))
-				// The API inserts batches at the top, so submit the last batch first.
-				for (const batch of batches.reverse()) {
+				// The API appends each batch at the bottom, so submit the batches in order.
+				for (const batch of batches) {
 					assertClientRequestContext(context)
 					try {
 						const {data} = await tasksBulkCreate({
@@ -218,8 +218,8 @@ export function bulkCreateTasksMutationOptions() {
 			}
 			return {tasks, error}
 		},
-		// The backend keeps the input order top to bottom, so insert back to front.
-		onSuccess: ({tasks}, _input, client) => [...tasks].reverse().forEach(task => {
+		// The backend keeps the input order top to bottom, so insert front to back.
+		onSuccess: ({tasks}, _input, client) => tasks.forEach(task => {
 			if (task) insertTaskIntoBoards(client, task)
 		}),
 		onSettled: (_input, client) => invalidateTaskMembership(client, undefined, 'active'),

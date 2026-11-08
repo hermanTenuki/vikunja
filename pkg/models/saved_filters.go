@@ -436,7 +436,7 @@ func preloadFilterViewState(s *xorm.Session, viewsByTask map[int64][]filterView)
 	return state, nil
 }
 
-func addTaskToFilterView(s *xorm.Session, filter *SavedFilter, view *ProjectView, task *Task, state *filterViewState) (taskBucket *TaskBucket, taskPosition *TaskPosition, err error) {
+func addTaskToFilterView(s *xorm.Session, view *ProjectView, task *Task, state *filterViewState) (taskBucket *TaskBucket, taskPosition *TaskPosition, err error) {
 	currentBucketID, hasBucket := state.bucketIDs[viewTask{viewID: view.ID, taskID: task.ID}]
 	var bucketID int64
 	switch {
@@ -458,7 +458,7 @@ func addTaskToFilterView(s *xorm.Session, filter *SavedFilter, view *ProjectView
 	}
 
 	if !state.hasPosition[viewTask{viewID: view.ID, taskID: task.ID}] {
-		taskPosition, err = calculateNewPositionForTask(s, &user.User{ID: filter.OwnerID}, task, view)
+		taskPosition, err = calculateNewPositionForTask(s, task, view)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -609,7 +609,7 @@ func addTaskToFilterViews(s *xorm.Session, task *Task, views []filterView, state
 	taskPositions := []*TaskPosition{}
 
 	for _, fv := range views {
-		taskBucket, taskPosition, err := addTaskToFilterView(s, fv.filter, fv.view, task, state)
+		taskBucket, taskPosition, err := addTaskToFilterView(s, fv.view, task, state)
 		if err != nil {
 			return err
 		}

@@ -231,6 +231,39 @@ func TestTask_Create(t *testing.T) {
 			"bucket_id": 22, // default bucket of project 6 but with a position of 2
 		}, false)
 	})
+	t.Run("new task lands below existing tasks in every view", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		views := []*ProjectView{}
+		require.NoError(t, s.Where("project_id = ?", 1).Find(&views))
+		require.NotEmpty(t, views)
+		// Only view 1 has fixture positions; give every view existing cards to append after.
+		highest := map[int64]float64{}
+		for _, view := range views {
+			_, err := s.Where("project_view_id = ?", view.ID).Delete(&TaskPosition{})
+			require.NoError(t, err)
+			_, err = s.Insert([]*TaskPosition{
+				{TaskID: 1, ProjectViewID: view.ID, Position: 100},
+				{TaskID: 2, ProjectViewID: view.ID, Position: 300},
+			})
+			require.NoError(t, err)
+			highest[view.ID] = 300
+		}
+
+		task := &Task{Title: "bottom", ProjectID: 1}
+		require.NoError(t, task.Create(s, usr))
+		require.NoError(t, s.Commit())
+
+		for _, view := range views {
+			tp := &TaskPosition{}
+			exists, err := s.Where("project_view_id = ? AND task_id = ?", view.ID, task.ID).Get(tp)
+			require.NoError(t, err)
+			require.True(t, exists, "view %d", view.ID)
+			assert.Greater(t, tp.Position, highest[view.ID], "view %d", view.ID)
+		}
+	})
 }
 
 func TestTask_Update(t *testing.T) {
@@ -432,6 +465,38 @@ func TestTask_Update(t *testing.T) {
 			"task_id":   1,
 			"bucket_id": 40,
 		}, false)
+	})
+	t.Run("task moved to another project lands below existing tasks", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		// A move stores positions only in kanban views; elsewhere the missing position sorts last anyway (NULLS LAST).
+		views := []*ProjectView{}
+		require.NoError(t, s.Where("project_id = ? AND view_kind = ?", 2, ProjectViewKindKanban).Find(&views))
+		require.NotEmpty(t, views)
+		// Project 2 has no fixture positions; give its views existing cards (tasks 13 and 37) to append after.
+		highest := map[int64]float64{}
+		for _, view := range views {
+			_, err := s.Insert([]*TaskPosition{
+				{TaskID: 13, ProjectViewID: view.ID, Position: 100},
+				{TaskID: 37, ProjectViewID: view.ID, Position: 300},
+			})
+			require.NoError(t, err)
+			highest[view.ID] = 300
+		}
+
+		task := &Task{ID: 1, ProjectID: 2}
+		require.NoError(t, task.Update(s, u))
+		require.NoError(t, s.Commit())
+
+		for viewID, top := range highest {
+			tp := &TaskPosition{}
+			exists, err := s.Where("project_view_id = ? AND task_id = ?", viewID, 1).Get(tp)
+			require.NoError(t, err)
+			require.True(t, exists, "view %d", viewID)
+			assert.Greater(t, tp.Position, top, "view %d", viewID)
+		}
 	})
 	t.Run("move done task to another project with a done bucket", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)

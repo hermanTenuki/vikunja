@@ -163,8 +163,8 @@ func TestUpdateTasksBatchInSavedFilterViews(t *testing.T) {
 	}
 	assert.NotZero(t, positionByTask[1])
 	assert.NotZero(t, positionByTask[3])
-	// Each task lands on top of the view, so later batch members get smaller positions.
-	assert.Less(t, positionByTask[3], positionByTask[1])
+	// Each task lands at the bottom of the view, so later batch members get larger positions.
+	assert.Greater(t, positionByTask[3], positionByTask[1])
 }
 
 func newKanbanView(t *testing.T, s *xorm.Session, viewID, projectID, ownerID int64) (*ProjectView, *Bucket) {

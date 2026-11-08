@@ -93,13 +93,13 @@ func TestCronInsertsNonZeroPosition(t *testing.T) {
 	}
 	require.NoError(t, err)
 
-	_, err = calculateNewPositionForTask(s, u, task, view)
+	// Every card of the view sits at zero, so the highest position the new one is appended after is zero too.
+	_, err = s.Where("project_view_id = ?", view.ID).Cols("position").Update(&TaskPosition{Position: 0})
 	require.NoError(t, err)
 
-	exists, err = s.Where("project_view_id = ? AND task_id = ?", view.ID, task.ID).Get(tp)
+	newPosition, err := calculateNewPositionForTask(s, task, view)
 	require.NoError(t, err)
-	require.True(t, exists)
-	assert.NotZero(t, tp.Position)
+	assert.NotZero(t, newPosition.Position)
 }
 
 // Task 51 matches "done = false" but is soft-deleted — the bucket heal must not
@@ -380,9 +380,9 @@ func TestIssue724_SortingOnFilteredViews(t *testing.T) {
 }
 
 // A task which starts matching a saved filter has no position row in the filter's views yet.
-// Its position must be created before the fetch query runs, so it appears at the top on the
-// very first fetch instead of landing at the bottom and jumping to the top on the next one.
-func TestSavedFilterNewTaskAtTopOnFirstFetch(t *testing.T) {
+// Its position must be created before the fetch query runs, so it appears at the bottom on the
+// very first fetch instead of landing there only after the next one.
+func TestSavedFilterNewTaskAtBottomOnFirstFetch(t *testing.T) {
 	db.LoadAndAssertFixtures(t)
 	s := db.NewSession()
 	defer s.Close()
@@ -408,7 +408,7 @@ func TestSavedFilterNewTaskAtTopOnFirstFetch(t *testing.T) {
 	task := &Task{Title: "new task matching the filter", ProjectID: 1}
 	require.NoError(t, task.Create(s, u))
 
-	fetchTaskIndex := func() int {
+	fetchTaskIndex := func() (int, int) {
 		tc := &TaskCollection{
 			ProjectID:     getProjectIDFromSavedFilterID(sf.ID),
 			ProjectViewID: view.ID,
@@ -421,16 +421,18 @@ func TestSavedFilterNewTaskAtTopOnFirstFetch(t *testing.T) {
 		require.True(t, ok)
 		for i, tt := range tasks {
 			if tt.ID == task.ID {
-				return i
+				return i, len(tasks)
 			}
 		}
 		t.Fatalf("task %d not found in filter results", task.ID)
-		return -1
+		return -1, 0
 	}
 
-	first := fetchTaskIndex()
-	assert.Equal(t, 0, first, "newly matching task must be at the top on the first fetch")
-	assert.Equal(t, first, fetchTaskIndex(), "task order must not change between fetches")
+	first, total := fetchTaskIndex()
+	require.Greater(t, total, 1)
+	assert.Equal(t, total-1, first, "newly matching task must be at the bottom on the first fetch")
+	second, _ := fetchTaskIndex()
+	assert.Equal(t, first, second, "task order must not change between fetches")
 }
 
 // The heal must cover all matching tasks without a position, not just those on the fetched
