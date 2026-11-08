@@ -512,7 +512,8 @@
 			"bucketLimitSavedSuccess": "Лимит колонки сохранён.",
 			"collapse": "Свернуть эту колонку",
 			"bucketLimitReached": "Вы достигли лимита колонки. Удалите какие-нибудь задачи или увеличьте лимит, чтобы добавить новые задачи.",
-			"bucketOptions": "Настройки колонки"
+			"bucketOptions": "Настройки колонки",
+			"timeInBucket": "В этой колонке с {date}"
 		},
 		"pseudo": {
 			"favorites": {

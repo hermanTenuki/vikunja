@@ -540,17 +540,18 @@ func insertTaskBuckets(s *xorm.Session, viewID, bucketID int64, taskIDs []int64)
 	// table ourselves to honor a configured postgres schema (database.schema).
 	table := s.Engine().TableName(&TaskBucket{}, true)
 
+	now := time.Now()
 	for start := 0; start < len(taskIDs); start += batchSize {
 		batch := taskIDs[start:min(start+batchSize, len(taskIDs))]
 
 		placeholders := make([]string, 0, len(batch))
-		args := make([]interface{}, 1, len(batch)*3+1)
+		args := make([]interface{}, 1, len(batch)*4+1)
 		for _, taskID := range batch {
-			placeholders = append(placeholders, "(?, ?, ?)")
-			args = append(args, taskID, bucketID, viewID)
+			placeholders = append(placeholders, "(?, ?, ?, ?)")
+			args = append(args, taskID, bucketID, viewID, now)
 		}
 
-		args[0] = "INSERT INTO " + table + " (task_id, bucket_id, project_view_id) VALUES " + strings.Join(placeholders, ", ") + " " + onConflict
+		args[0] = "INSERT INTO " + table + " (task_id, bucket_id, project_view_id, entered_at) VALUES " + strings.Join(placeholders, ", ") + " " + onConflict
 
 		_, err = s.Exec(args...)
 		if err != nil {

@@ -41,6 +41,8 @@ type TaskBucket struct {
 	ProjectViewID int64 `xorm:"bigint not null index unique(task_view)" json:"project_view_id" param:"view" doc:"The view the bucket belongs to. On /api/v2 this is taken from the URL; a value in the body is ignored."`
 	ProjectID     int64 `xorm:"-" json:"-" param:"project"`
 	Task          *Task `xorm:"-" json:"task" readOnly:"true" doc:"The task as it stands after the move, reflecting any done-state change."`
+	// Never taken from the request: upsert always uses the current time.
+	EnteredAt time.Time `xorm:"null 'entered_at'" json:"entered_at,omitzero" readOnly:"true" doc:"When the task entered its current bucket. Set by the server; ignored on write."`
 
 	web.Permissions `xorm:"-" json:"-"`
 	web.CRUDable    `xorm:"-" json:"-"`
@@ -80,16 +82,36 @@ func (b *TaskBucket) upsert(s *xorm.Session) (err error) {
 	// A native upsert moves the task in one atomic statement, without
 	// depending on the affected-row count (MySQL/MariaDB report 0 affected
 	// rows for an unchanged value).
-	onConflict := "ON CONFLICT (task_id, project_view_id) DO UPDATE SET bucket_id = excluded.bucket_id"
+	//
+	// entered_at only changes when the bucket actually changes, because not
+	// every caller checks for a same-bucket move first. The existing row is
+	// referenced by the bare table name: unqualified columns are ambiguous with
+	// excluded.* on postgres, and the schema qualifier is not allowed here.
+	onConflict := "ON CONFLICT (task_id, project_view_id) DO UPDATE SET " +
+		"entered_at = CASE WHEN task_buckets.bucket_id <> excluded.bucket_id THEN excluded.entered_at ELSE task_buckets.entered_at END, " +
+		"bucket_id = excluded.bucket_id"
 	if db.Type() == schemas.MYSQL {
-		onConflict = "ON DUPLICATE KEY UPDATE bucket_id = VALUES(bucket_id)"
+		// MySQL evaluates the assignments left to right on the already updated
+		// row, so entered_at has to be assigned before bucket_id.
+		onConflict = "ON DUPLICATE KEY UPDATE " +
+			"entered_at = IF(bucket_id <> VALUES(bucket_id), VALUES(entered_at), entered_at), " +
+			"bucket_id = VALUES(bucket_id)"
 	}
 
 	// Raw SQL bypasses xorm's bean-based table-name handling, so qualify the
 	// table ourselves to honor a configured postgres schema (database.schema).
 	table := s.Engine().TableName(b, true)
-	query := "INSERT INTO " + table + " (task_id, project_view_id, bucket_id) VALUES (?, ?, ?) " + onConflict
-	_, err = s.Exec(query, b.TaskID, b.ProjectViewID, b.BucketID)
+	query := "INSERT INTO " + table + " (task_id, project_view_id, bucket_id, entered_at) VALUES (?, ?, ?, ?) " + onConflict
+	_, err = s.Exec(query, b.TaskID, b.ProjectViewID, b.BucketID, time.Now())
+	return
+}
+
+// resetTaskBucketsEnteredAt restarts the time-in-bucket counter of a task in all its views.
+func resetTaskBucketsEnteredAt(s *xorm.Session, taskID int64) (err error) {
+	_, err = s.
+		Where("task_id = ?", taskID).
+		Cols("entered_at").
+		Update(&TaskBucket{EnteredAt: time.Now()})
 	return
 }
 
@@ -152,6 +174,11 @@ func updateTaskBucket(s *xorm.Session, a web.Auth, b *TaskBucket) (err error) {
 			doneChanged = true
 			task.Done = true
 			if task.isRepeating() {
+				// The counter restarts for every completed repeat, even if the bucket stays the same.
+				err = resetTaskBucketsEnteredAt(s, task.ID)
+				if err != nil {
+					return
+				}
 				oldTask := *task
 				oldTask.Done = false
 				updateDone(&oldTask, task)

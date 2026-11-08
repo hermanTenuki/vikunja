@@ -496,6 +496,52 @@ func TestInsertFromStructure(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), parentBucketCount)
 	})
+	t.Run("task bucket entered_at from the file is kept, a missing one is the import time", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		u := &user.User{ID: 1}
+		enteredAt := time.Now().Add(-72 * time.Hour).Truncate(time.Second)
+
+		structure := []*models.ProjectWithTasksAndBuckets{{
+			Project: models.Project{
+				Title: "Import entered at",
+				Views: []*models.ProjectView{{
+					ID:                      100,
+					Title:                   "Kanban",
+					ViewKind:                models.ProjectViewKindKanban,
+					BucketConfigurationMode: models.BucketConfigurationModeManual,
+					DefaultBucketID:         200,
+				}},
+			},
+			Tasks: []*models.TaskWithComments{
+				{Task: models.Task{ID: 10, Title: "With entered_at", BucketID: 200}},
+				{Task: models.Task{ID: 11, Title: "Without entered_at", BucketID: 200}},
+			},
+			Buckets: []*models.Bucket{{
+				ID:            200,
+				Title:         "Backlog",
+				ProjectViewID: 100,
+			}},
+			TaskBuckets: []*models.TaskBucket{
+				{TaskID: 10, BucketID: 200, ProjectViewID: 100, EnteredAt: enteredAt},
+				{TaskID: 11, BucketID: 200, ProjectViewID: 100},
+			},
+		}}
+
+		require.NoError(t, InsertFromStructure(structure, u))
+
+		s := db.NewSession()
+		defer s.Close()
+
+		bucketEnteredAt := func(task *models.TaskWithComments) time.Time {
+			row := &models.TaskBucket{}
+			found, err := s.Where("task_id = ?", task.ID).Get(row)
+			require.NoError(t, err)
+			require.True(t, found)
+			return row.EnteredAt
+		}
+		assert.WithinDuration(t, enteredAt, bucketEnteredAt(structure[0].Tasks[0]), time.Second)
+		assert.WithinDuration(t, time.Now(), bucketEnteredAt(structure[0].Tasks[1]), time.Minute)
+	})
 	t.Run("skips null positions and task buckets", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)
 

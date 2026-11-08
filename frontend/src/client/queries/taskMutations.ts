@@ -34,6 +34,7 @@ import {
 	mapTaskEverywhere,
 	removeTaskEverywhere,
 	replaceTaskEverywhere,
+	resetBucketEnteredAt,
 	taskQueryKeys,
 } from './taskCache'
 import {getCachedProject, projectKeys} from './projects'
@@ -169,6 +170,8 @@ export function updateTaskMutationOptions(optimistic = false) {
 		} : undefined,
 		onSuccess: (task, input, client) => {
 			replaceTaskEverywhere(client, task)
+			// The server reopened a task that was sent as done: a repeat was completed.
+			if (input.done === true && task.done === false) resetBucketEnteredAt(client, input.id)
 			reconcileDoneBuckets(client, normalizeTask({...task, id: input.id}))
 		},
 		onSettled: ({id}, client) => invalidateTaskMembership(client, id),

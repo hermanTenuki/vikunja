@@ -540,6 +540,23 @@ func TestProjectView_InsertTaskBuckets(t *testing.T) {
 	})
 }
 
+func TestProjectView_InsertTaskBuckets_EnteredAt(t *testing.T) {
+	t.Run("new rows get it and existing rows keep theirs", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		s := db.NewSession()
+		defer s.Close()
+		// Task 2 is already placed in view 4, task 47 is not.
+		require.NoError(t, insertTaskBuckets(s, 4, 1, []int64{2, 47}))
+		require.NoError(t, s.Commit())
+
+		assertEnteredAtNow(t, enteredAtOf(t, 47, 4))
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 2, 4))
+	})
+}
+
 func TestProjectView_SavedFilterWithBucketIDFilter(t *testing.T) {
 	u := &user.User{ID: 1}
 

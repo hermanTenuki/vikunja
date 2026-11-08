@@ -71,6 +71,7 @@ export function mergeTask(task: Task, updated: Task): Task {
 		// Write responses carry no view context, so cached per-view values win.
 		position: task.position ?? updated.position,
 		bucket_id: task.bucket_id ?? updated.bucket_id,
+		bucket_entered_at: task.bucket_entered_at ?? updated.bucket_entered_at,
 		assignees: updated.assignees ?? task.assignees,
 		labels: updated.labels ?? task.labels,
 		attachments: updated.attachments ?? task.attachments,
@@ -134,7 +135,10 @@ export function moveTaskToBucket(buckets: Bucket[], task: Task, bucketId: number
 		if (bucket.id === bucketId) return {
 			...bucket,
 			count: (bucket.count ?? 0) + 1,
-			tasks: [{...mergeTask(card, task), bucket_id: bucketId}, ...(bucket.tasks ?? [])],
+			tasks: [
+				{...mergeTask(card, task), bucket_id: bucketId, bucket_entered_at: new Date().toISOString()},
+				...(bucket.tasks ?? []),
+			],
 		}
 		return bucket
 	})

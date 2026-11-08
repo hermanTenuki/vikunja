@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/files"
@@ -140,4 +141,82 @@ func TestExportImportRoundTripRelations(t *testing.T) {
 		assertRelation(child.Title, big.Title, models.RelationKindRelated)
 		assertRelation(big.Title, parent.Title, models.RelationKindRelated)
 	})
+}
+
+func TestExportImportRoundTripBucketEnteredAt(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	files.InitTestFileFixtures(t)
+	notifications.Fake()
+	t.Cleanup(notifications.Unfake)
+
+	s := db.NewSession()
+	exporter := &user.User{Username: "entered-at-exporter", Email: "entered-at-exporter@example.com"}
+	_, err := s.Insert(exporter)
+	require.NoError(t, err)
+	importer := &user.User{Username: "entered-at-importer", Email: "entered-at-importer@example.com"}
+	_, err = s.Insert(importer)
+	require.NoError(t, err)
+
+	project := &models.Project{Title: "entered at project"}
+	require.NoError(t, models.CreateProject(s, project, exporter, true, true))
+	task := &models.Task{Title: "entered at task", ProjectID: project.ID}
+	require.NoError(t, task.Create(s, exporter))
+
+	enteredAt := time.Now().Add(-72 * time.Hour).Truncate(time.Second)
+	_, err = s.Where("task_id = ?", task.ID).Cols("entered_at").Update(&models.TaskBucket{EnteredAt: enteredAt})
+	require.NoError(t, err)
+
+	_, err = models.ExportUserData(s, exporter)
+	require.NoError(t, err)
+	exportFile, err := models.GetUserDataExportFile(s, exporter)
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+	_ = s.Close()
+
+	require.NoError(t, models.OpenUserDataExportFile(exportFile))
+	archive, err := io.ReadAll(exportFile.File)
+	require.NoError(t, err)
+	_ = exportFile.File.Close()
+
+	zr, err := zip.NewReader(bytes.NewReader(archive), int64(len(archive)))
+	require.NoError(t, err)
+	f, err := zr.Open("data.json")
+	require.NoError(t, err)
+	data, err := io.ReadAll(f)
+	require.NoError(t, err)
+
+	var projects []struct {
+		ID          int64 `json:"id"`
+		TaskBuckets []struct {
+			TaskID    int64     `json:"task_id"`
+			EnteredAt time.Time `json:"entered_at"`
+		} `json:"task_buckets"`
+	}
+	require.NoError(t, json.Unmarshal(data, &projects))
+	exported := 0
+	for _, p := range projects {
+		for _, tb := range p.TaskBuckets {
+			if tb.TaskID == task.ID {
+				exported++
+				assert.WithinDuration(t, enteredAt, tb.EnteredAt, time.Second)
+			}
+		}
+	}
+	require.Positive(t, exported, "the task's bucket was not exported")
+
+	m := &FileMigrator{}
+	require.NoError(t, m.Migrate(importer, bytes.NewReader(archive), int64(len(archive))))
+
+	s2 := db.NewSession()
+	defer s2.Close()
+	imported := &models.Task{}
+	found, err := s2.Where("title = ? AND created_by_id = ?", task.Title, importer.ID).Get(imported)
+	require.NoError(t, err)
+	require.True(t, found)
+	rows := []*models.TaskBucket{}
+	require.NoError(t, s2.Where("task_id = ?", imported.ID).Find(&rows))
+	require.NotEmpty(t, rows)
+	for _, row := range rows {
+		assert.WithinDuration(t, enteredAt, row.EnteredAt, time.Second)
+	}
 }

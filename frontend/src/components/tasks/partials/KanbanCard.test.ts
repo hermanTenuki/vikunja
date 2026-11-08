@@ -3,9 +3,11 @@ import {shallowMount, flushPromises} from '@vue/test-utils'
 import {createPinia, setActivePinia} from 'pinia'
 import {createRouter, createMemoryHistory} from 'vue-router'
 import {QueryClient, VueQueryPlugin} from '@tanstack/vue-query'
+import {createI18n} from 'vue-i18n'
 
 import {normalizeTask, type TaskResponse} from '@/client/queries/tasks'
 import {ApiError} from '@/client/problem'
+import en from '@/i18n/lang/en.json'
 
 const sdk = vi.hoisted(() => ({
 	patchTasksRead: vi.fn(),
@@ -24,6 +26,8 @@ const attachments = vi.hoisted(() => ({
 vi.mock('@/helpers/attachments', () => attachments)
 
 import KanbanCard from './KanbanCard.vue'
+
+const i18n = createI18n({legacy: false, locale: 'en', messages: {en}})
 
 class FakeIntersectionObserver {
 	static instances: FakeIntersectionObserver[] = []
@@ -83,6 +87,7 @@ function mountCard(task: TaskResponse) {
 		props: {task, projectId: 1},
 		global: {
 			plugins: [
+				i18n,
 				createPinia(),
 				router,
 				[VueQueryPlugin, {queryClient: new QueryClient({defaultOptions: {queries: {retry: false}}})}],

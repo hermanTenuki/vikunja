@@ -87,6 +87,32 @@ func TestProjectDuplicate(t *testing.T) {
 		testProjectDuplicate(t, 35, 6)
 	})
 
+	t.Run("copied task buckets start counting from the duplication", func(t *testing.T) {
+		files.InitTestFileFixtures(t)
+		db.LoadAndAssertFixtures(t)
+		seedEnteredAt(t, staleEnteredAt())
+		s := db.NewSession()
+		defer s.Close()
+
+		u := &user.User{ID: 1}
+		l := &ProjectDuplicate{ProjectID: 1}
+		can, err := l.CanCreate(s, u)
+		require.NoError(t, err)
+		require.True(t, can)
+		require.NoError(t, l.Create(s, u))
+
+		newView := &ProjectView{}
+		has, err := s.Where("project_id = ? AND view_kind = ?", l.Project.ID, ProjectViewKindKanban).Get(newView)
+		require.NoError(t, err)
+		require.True(t, has)
+		rows := []*TaskBucket{}
+		require.NoError(t, s.Where("project_view_id = ?", newView.ID).Find(&rows))
+		require.NotEmpty(t, rows)
+		for _, row := range rows {
+			assertEnteredAtNow(t, row.EnteredAt, "task %d", row.TaskID)
+		}
+	})
+
 	t.Run("buckets above the per-view cap are copied", func(t *testing.T) {
 		files.InitTestFileFixtures(t)
 		db.LoadAndAssertFixtures(t)

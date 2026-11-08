@@ -670,4 +670,35 @@ test.describe('Project View Kanban', () => {
 		await expect(limitSpan.locator('svg')).toBeVisible()
 		await expect(limitSpan).toContainText('Limit reached')
 	})
+
+	test('Shows the time in the bucket and resets it when the card moves to another bucket', async ({authenticatedPage: page, apiContext, userToken}) => {
+		const headers = {Authorization: `Bearer ${userToken}`}
+		const [task] = await TaskFactory.create(1, {project_id: 1})
+		await TaskBucketFactory.create(1, {
+			task_id: task.id,
+			bucket_id: buckets[0].id,
+			project_view_id: buckets[0].project_view_id,
+			entered_at: new Date(Date.now() - 21 * 86_400_000).toISOString(),
+		})
+		await page.goto('/projects/1/4')
+
+		const timeInBucket = page.locator('.kanban .kanban-card').filter({hasText: task.title}).locator('.time-in-bucket')
+		await expect(timeInBucket).toContainText('3 wks')
+
+		await page.locator('.kanban .bucket .tasks .task').filter({hasText: task.title}).first()
+			.dragTo(page.locator('.kanban .bucket:nth-child(2) .tasks'))
+		await expect(page.locator('.kanban .bucket:nth-child(2) .tasks')).toContainText(task.title)
+		await expect(timeInBucket).toContainText('1 min')
+
+		await page.reload()
+		await expect(page.locator('.kanban .bucket:nth-child(2) .tasks')).toContainText(task.title)
+		await expect(timeInBucket).toContainText('1 min')
+
+		const board = await apiContext.get(`/api/v2/projects/1/views/4/buckets/tasks`, {headers})
+		expect(board.ok()).toBeTruthy()
+		const stored = (await board.json()).items
+			.flatMap(bucket => bucket.tasks ?? [])
+			.find(item => item.id === task.id)
+		expect(Date.now() - new Date(stored.bucket_entered_at).getTime()).toBeLessThan(5 * 60_000)
+	})
 })

@@ -625,3 +625,208 @@ func TestTaskBucket_CanUpdate(t *testing.T) {
 		assert.False(t, can)
 	})
 }
+
+// staleEnteredAt is the value rows are seeded with, so that "set to now" and "kept" are told apart.
+func staleEnteredAt() time.Time {
+	return time.Now().Add(-48 * time.Hour)
+}
+
+// seedEnteredAt gives every task bucket row the given entered_at. The fixtures leave it NULL.
+func seedEnteredAt(t *testing.T, enteredAt time.Time) {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	_, err := s.Where("task_id > 0").Cols("entered_at").Update(&TaskBucket{EnteredAt: enteredAt})
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+}
+
+// enteredAtOf reads entered_at from the committed state. The zero time means NULL.
+func enteredAtOf(t *testing.T, taskID, viewID int64) time.Time {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	tb := &TaskBucket{}
+	found, err := s.Where("task_id = ? AND project_view_id = ?", taskID, viewID).Get(tb)
+	require.NoError(t, err)
+	require.Truef(t, found, "no task bucket for task %d in view %d", taskID, viewID)
+	return tb.EnteredAt
+}
+
+func assertEnteredAtNow(t *testing.T, got time.Time, msgAndArgs ...interface{}) {
+	t.Helper()
+	assert.WithinDuration(t, time.Now(), got, time.Minute, msgAndArgs...)
+}
+
+func assertEnteredAtKept(t *testing.T, expected, got time.Time, msgAndArgs ...interface{}) {
+	t.Helper()
+	assert.WithinDuration(t, expected, got, 2*time.Second, msgAndArgs...)
+}
+
+// createSecondKanbanView adds a second manual kanban view to project 1 and puts the project's tasks into it.
+func createSecondKanbanView(t *testing.T, u *user.User) *ProjectView {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	view := &ProjectView{
+		Title:                   "Second Kanban",
+		ProjectID:               1,
+		ViewKind:                ProjectViewKindKanban,
+		BucketConfigurationMode: BucketConfigurationModeManual,
+	}
+	require.NoError(t, view.Create(s, u))
+	require.NoError(t, s.Commit())
+	require.NotZero(t, view.DoneBucketID)
+	return view
+}
+
+func TestTaskBucket_EnteredAt(t *testing.T) {
+	u := &user.User{ID: 1}
+
+	move := func(t *testing.T, tb *TaskBucket) {
+		t.Helper()
+		s := db.NewSession()
+		defer s.Close()
+		tb.ProjectID = 1
+		require.NoError(t, tb.Update(s, u))
+		require.NoError(t, s.Commit())
+	}
+
+	t.Run("moving to another bucket sets it and leaves other rows alone", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		move(t, &TaskBucket{TaskID: 3, BucketID: 1, ProjectViewID: 4}) // task 3 is in bucket 2
+
+		assertEnteredAtNow(t, enteredAtOf(t, 3, 4))
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 4, 4))
+	})
+	t.Run("a client-sent entered_at is ignored", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+
+		move(t, &TaskBucket{
+			TaskID:        3,
+			BucketID:      1,
+			ProjectViewID: 4,
+			EnteredAt:     time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+		})
+
+		assertEnteredAtNow(t, enteredAtOf(t, 3, 4))
+	})
+	t.Run("moving into the same bucket keeps it", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		move(t, &TaskBucket{TaskID: 4, BucketID: 2, ProjectViewID: 4}) // task 4 is already in bucket 2
+
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 4, 4))
+	})
+	t.Run("changing only the position keeps it", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		s := db.NewSession()
+		defer s.Close()
+		require.NoError(t, updateTaskPosition(s, u, &TaskPosition{TaskID: 4, ProjectViewID: 4, Position: 7}))
+		require.NoError(t, s.Commit())
+
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 4, 4))
+	})
+	t.Run("moving into the done bucket and out again sets it in every view", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		second := createSecondKanbanView(t, u)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		move(t, &TaskBucket{TaskID: 1, BucketID: 3, ProjectViewID: 4}) // task 1 is open in bucket 1
+
+		assertEnteredAtNow(t, enteredAtOf(t, 1, 4))
+		assertEnteredAtNow(t, enteredAtOf(t, 1, second.ID), "the done bucket of the other view")
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 2, second.ID))
+
+		seedEnteredAt(t, stale)
+		move(t, &TaskBucket{TaskID: 2, BucketID: 1, ProjectViewID: 4}) // task 2 is done in bucket 3
+
+		assertEnteredAtNow(t, enteredAtOf(t, 2, 4))
+	})
+	t.Run("dragging a repeating task into the done bucket restarts it in every view", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		second := createSecondKanbanView(t, u)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		// Task 28 repeats and is in the default bucket 1, so it ends up in the bucket it started in.
+		tb := &TaskBucket{TaskID: 28, BucketID: 3, ProjectViewID: 4}
+		move(t, tb)
+
+		assert.EqualValues(t, 1, tb.BucketID)
+		assertEnteredAtNow(t, enteredAtOf(t, 28, 4))
+		assertEnteredAtNow(t, enteredAtOf(t, 28, second.ID))
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 1, 4))
+	})
+
+	t.Run("upsert", func(t *testing.T) {
+		upsert := func(t *testing.T, taskID, bucketID int64) {
+			t.Helper()
+			s := db.NewSession()
+			defer s.Close()
+			require.NoError(t, (&TaskBucket{TaskID: taskID, ProjectViewID: 4, BucketID: bucketID}).upsert(s))
+			require.NoError(t, s.Commit())
+		}
+
+		t.Run("same bucket keeps the stored value", func(t *testing.T) {
+			db.LoadAndAssertFixtures(t)
+			stale := staleEnteredAt()
+			seedEnteredAt(t, stale)
+
+			upsert(t, 4, 2) // task 4 is in bucket 2
+
+			assertEnteredAtKept(t, stale, enteredAtOf(t, 4, 4))
+		})
+		t.Run("same bucket keeps NULL", func(t *testing.T) {
+			db.LoadAndAssertFixtures(t)
+
+			upsert(t, 4, 2)
+
+			assert.True(t, enteredAtOf(t, 4, 4).IsZero())
+		})
+		t.Run("another bucket sets it", func(t *testing.T) {
+			db.LoadAndAssertFixtures(t)
+			seedEnteredAt(t, staleEnteredAt())
+
+			upsert(t, 4, 1)
+
+			assertEnteredAtNow(t, enteredAtOf(t, 4, 4))
+		})
+		t.Run("another bucket sets it on a NULL row", func(t *testing.T) {
+			db.LoadAndAssertFixtures(t)
+
+			upsert(t, 4, 1)
+
+			assertEnteredAtNow(t, enteredAtOf(t, 4, 4))
+		})
+		t.Run("a new row gets it", func(t *testing.T) {
+			db.LoadAndAssertFixtures(t)
+
+			upsert(t, 47, 1) // task 47 has no row in view 4
+
+			assertEnteredAtNow(t, enteredAtOf(t, 47, 4))
+		})
+		t.Run("the raw parameter reads back as the same instant in another time zone", func(t *testing.T) {
+			db.LoadAndAssertFixtures(t)
+			// time.Now() carries time.Local, which is what the raw upsert parameter is written with.
+			previous := time.Local                           //nolint:gosmopolitan // the zone is the thing under test
+			time.Local = time.FixedZone("test", 5*3600+1800) //nolint:gosmopolitan // same
+			t.Cleanup(func() { time.Local = previous })      //nolint:gosmopolitan // same
+
+			upsert(t, 47, 1)
+			upsert(t, 4, 1)
+
+			assertEnteredAtNow(t, enteredAtOf(t, 47, 4), "insert")
+			assertEnteredAtNow(t, enteredAtOf(t, 4, 4), "conflict update")
+		})
+	})
+}

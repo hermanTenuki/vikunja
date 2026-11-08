@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {QueryClient, QueryObserver} from '@tanstack/vue-query'
 import {taskKeys, tasksQuery} from './tasks'
 import {
@@ -106,6 +106,7 @@ async function seedDefaultBucketBoards() {
 
 describe('task mutations', () => {
 	beforeEach(() => vi.resetAllMocks())
+	afterEach(() => vi.useRealTimers())
 
 	it('sends only writable fields and reconciles loaded detail', async () => {
 		const client = new QueryClient()
@@ -389,6 +390,51 @@ describe('task mutations', () => {
 		expect(sdk.projectViewBucketsTasksList).not.toHaveBeenCalled()
 	})
 
+	it('stamps the repeated card with now in every cached board and keeps the time on a plain edit', async () => {
+		vi.useFakeTimers({toFake: ['Date']})
+		vi.setSystemTime(new Date('2026-11-07T12:00:00Z'))
+		const client = new QueryClient()
+		const old = '2026-10-01T00:00:00Z'
+		const card = {id: 1, done: false, bucket_entered_at: old}
+		const sibling = {id: 2, done: false, bucket_entered_at: old}
+		const boardKeys = [kanbanKeys.board(1, 2), kanbanKeys.board(1, 5)]
+		const filterBoard = kanbanKeys.board(1, 7)
+		client.setQueryData(filterBoard, {buckets: [{id: 9, count: 1, tasks: [{id: 1, done: false}]}], pages: {9: 1}})
+		boardKeys.forEach((key, index) => client.setQueryData(key, {
+			buckets: [{id: index + 3, count: 2, tasks: [card, sibling]}],
+			pages: {[index + 3]: 1},
+		}))
+		const run = (input: Task & {id: number}) => client.getMutationCache()
+			.build(client, updateTaskMutationOptions())
+			.execute(input)
+		const entered = (key: readonly unknown[]) => client.getQueryData<BoardData>(key)?.buckets[0].tasks
+			.map(task => task.bucket_entered_at)
+
+		sdk.patchTasksRead.mockResolvedValue({data: {id: 1, project_id: 1, done: false, title: 'renamed'}})
+		await run({id: 1, title: 'renamed'})
+		expect(boardKeys.map(entered)).toEqual([[old, old], [old, old]])
+
+		sdk.patchTasksRead.mockResolvedValue({data: {id: 1, project_id: 1, done: false}})
+		await run({id: 1, done: true})
+		expect(boardKeys.map(entered)).toEqual([['2026-11-07T12:00:00.000Z', old], ['2026-11-07T12:00:00.000Z', old]])
+		// a filter-mode board carries no time in the bucket and must not gain one
+		expect(entered(filterBoard)).toEqual([undefined])
+	})
+
+	it('keeps the time in the bucket when completing a task that stays done', async () => {
+		const client = new QueryClient()
+		const old = '2026-10-01T00:00:00Z'
+		client.setQueryData(kanbanKeys.board(1, 2), {
+			buckets: [{id: 3, count: 1, tasks: [{id: 1, done: false, bucket_entered_at: old}]}],
+			pages: {3: 1},
+		})
+		sdk.patchTasksRead.mockResolvedValue({data: {id: 1, project_id: 1, done: true}})
+		await client.getMutationCache()
+			.build(client, updateTaskMutationOptions())
+			.execute({id: 1, done: true})
+		expect(client.getQueryData<BoardData>(kanbanKeys.board(1, 2))?.buckets[0].tasks[0].bucket_entered_at).toBe(old)
+	})
+
 	it('inserts a created card into a scrolled board without refetching it, while lists still refetch', async () => {
 		const {client, board, list, unsubscribe} = await seedScrolledBoard()
 		sdk.tasksCreate.mockResolvedValue({data: {id: 99, title: 'new', project_id: 1, bucket_id: 3}})
@@ -457,6 +503,18 @@ describe('task mutations', () => {
 			.map(bucket => bucket.tasks.map(task => task.id))).toEqual([[], [9]])
 		expect(client.getQueryData<BoardData>(kanbanKeys.board(1, 5))?.buckets[0].tasks
 			.map(task => task.id)).toEqual([9])
+	})
+
+	it('stamps a created card with now as its time in the bucket', async () => {
+		vi.useFakeTimers({toFake: ['Date']})
+		vi.setSystemTime(new Date('2026-11-07T12:00:00Z'))
+		const client = await seedDefaultBucketBoards()
+		sdk.tasksCreate.mockResolvedValue({data: {id: 9, project_id: 1}})
+		await client.getMutationCache()
+			.build(client, createTaskMutationOptions())
+			.execute({title: 'new', project_id: 1})
+		expect(client.getQueryData<BoardData>(kanbanKeys.board(1, 2))?.buckets[1].tasks[0].bucket_entered_at)
+			.toBe('2026-11-07T12:00:00.000Z')
 	})
 
 	it('inserts a done card into the done bucket even when another bucket was requested', async () => {

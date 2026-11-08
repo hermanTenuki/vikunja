@@ -108,6 +108,16 @@
 				>
 					<Icon icon="history" />
 				</span>
+				<span
+					v-if="timeInBucket"
+					v-tooltip="timeInBucketTooltip"
+					class="icon time-in-bucket"
+					role="img"
+					:aria-label="timeInBucketTooltip"
+				>
+					<Icon icon="clock" />
+					{{ timeInBucket }}
+				</span>
 				<CommentCount
 					:task="task"
 					class="project-task-icon"
@@ -129,6 +139,7 @@
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch} from 'vue'
 import {useRouter} from 'vue-router'
+import {useI18n} from 'vue-i18n'
 
 import {useGlobalNow} from '@/composables/useGlobalNow'
 
@@ -148,6 +159,7 @@ import {fetchAttachmentUrl, releaseAttachmentUrl} from '@/helpers/attachments'
 import {ApiError} from '@/client/problem'
 
 import {formatDateLong, formatDisplayDate, formatISO} from '@/helpers/time/formatDate'
+import {formatShortDuration} from '@/helpers/time/formatShortDuration'
 import {colorIsDark} from '@/helpers/color/colorIsDark'
 import {useUpdateTaskMutation} from '@/client/queries/taskMutations'
 import AssigneeList from '@/components/tasks/partials/AssigneeList.vue'
@@ -194,6 +206,15 @@ const isOverdue = computed(() => (
 	new Date(props.task.due_date ?? 0).getTime() > 0 &&
 	new Date(props.task.due_date ?? 0).getTime() <= now.value.getTime()
 ))
+
+const {t, locale} = useI18n({useScope: 'global'})
+
+const timeInBucket = computed(() => props.task.bucket_entered_at
+	? formatShortDuration(new Date(props.task.bucket_entered_at), now.value, locale.value)
+	: '')
+const timeInBucketTooltip = computed(() => props.task.bucket_entered_at
+	? t('project.kanban.timeInBucket', {date: formatDateLong(props.task.bucket_entered_at)})
+	: '')
 
 async function toggleTaskDone(task: TaskResponse) {
 	const isRecurringTask = task.repeat_after > 0 || task.repeat_mode === TASK_REPEAT_MODES.REPEAT_MODE_MONTH
@@ -399,6 +420,13 @@ $task-background: var(--white);
 				margin-block-start: 0;
 			}
 		}
+	}
+
+	.footer .time-in-bucket {
+		inline-size: auto;
+		font-size: .75rem;
+		white-space: nowrap;
+		gap: .25rem;
 	}
 
 	.footer .icon,

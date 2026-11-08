@@ -19,6 +19,7 @@ package models
 import (
 	"bytes"
 	"io"
+	"time"
 
 	"code.vikunja.io/api/pkg/files"
 	"code.vikunja.io/api/pkg/log"
@@ -270,6 +271,7 @@ func duplicateViews(s *xorm.Session, pd *ProjectDuplicate, doer web.Auth, taskMa
 			BucketID:      bucketMap[tb.BucketID],
 			TaskID:        taskMap[tb.TaskID],
 			ProjectViewID: viewMap[tb.ProjectViewID],
+			EnteredAt:     time.Now(),
 		})
 	}
 

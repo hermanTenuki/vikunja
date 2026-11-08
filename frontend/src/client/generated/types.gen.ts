@@ -2284,6 +2284,10 @@ export type Task = {
      */
     readonly attachments?: Array<TaskAttachment> | null;
     /**
+     * When the task entered the bucket it is shown in. Only populated when the task is accessed via a view with manually configured buckets. Set by the server; ignored on write.
+     */
+    readonly bucket_entered_at?: string;
+    /**
      * The bucket the task is in. Only populated when the task is accessed via a view with buckets. To move a task between buckets, the new bucket must be in the same view as the old one.
      */
     bucket_id?: number;
@@ -2464,6 +2468,10 @@ export type TaskBucket = {
      */
     bucket_id?: number;
     /**
+     * When the task entered its current bucket. Set by the server; ignored on write.
+     */
+    readonly entered_at?: string;
+    /**
      * The view the bucket belongs to. On /api/v2 this is taken from the URL; a value in the body is ignored.
      */
     project_view_id?: number;
@@ -2624,6 +2632,10 @@ export type TaskReadOneBody = {
      * The task's attachments. Read-only here; use the attachment endpoints to add or remove them.
      */
     readonly attachments?: Array<TaskAttachment> | null;
+    /**
+     * When the task entered the bucket it is shown in. Only populated when the task is accessed via a view with manually configured buckets. Set by the server; ignored on write.
+     */
+    readonly bucket_entered_at?: string;
     /**
      * The bucket the task is in. Only populated when the task is accessed via a view with buckets. To move a task between buckets, the new bucket must be in the same view as the old one.
      */
@@ -3340,6 +3352,10 @@ export type TrashedTask = {
      * The task's attachments. Read-only here; use the attachment endpoints to add or remove them.
      */
     readonly attachments?: Array<TaskAttachment> | null;
+    /**
+     * When the task entered the bucket it is shown in. Only populated when the task is accessed via a view with manually configured buckets. Set by the server; ignored on write.
+     */
+    readonly bucket_entered_at?: string;
     /**
      * The bucket the task is in. Only populated when the task is accessed via a view with buckets. To move a task between buckets, the new bucket must be in the same view as the old one.
      */

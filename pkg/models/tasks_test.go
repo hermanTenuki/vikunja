@@ -1931,3 +1931,108 @@ func TestAddOneMonthToDate(t *testing.T) {
 		})
 	}
 }
+
+func TestTask_EnteredAt(t *testing.T) {
+	u := &user.User{ID: 1}
+
+	t.Run("creating a task sets it", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		task := &Task{Title: "new", ProjectID: 1}
+		require.NoError(t, task.Create(s, u))
+		require.NoError(t, s.Commit())
+
+		assertEnteredAtNow(t, enteredAtOf(t, task.ID, 4))
+	})
+	t.Run("creating a done task sets it in the done bucket", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		task := &Task{Title: "new and done", ProjectID: 1, Done: true}
+		require.NoError(t, task.Create(s, u))
+		require.NoError(t, s.Commit())
+
+		db.AssertExists(t, "task_buckets", map[string]interface{}{"task_id": task.ID, "bucket_id": 3}, false)
+		assertEnteredAtNow(t, enteredAtOf(t, task.ID, 4))
+	})
+	t.Run("bulk creating tasks sets it", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		btc := &BulkTaskCreation{
+			ProjectID: 1,
+			Tasks: []*Task{
+				{Title: "bulk one"},
+				{Title: "bulk two"},
+			},
+		}
+		require.NoError(t, btc.Create(s, u))
+		require.NoError(t, s.Commit())
+
+		for _, task := range btc.Tasks {
+			assertEnteredAtNow(t, enteredAtOf(t, task.ID, 4))
+		}
+	})
+	t.Run("marking done and undone sets it", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		second := createSecondKanbanView(t, u)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		s := db.NewSession()
+		defer s.Close()
+		require.NoError(t, (&Task{ID: 1, Done: true}).Update(s, u))
+		require.NoError(t, s.Commit())
+
+		assertEnteredAtNow(t, enteredAtOf(t, 1, 4))
+		assertEnteredAtNow(t, enteredAtOf(t, 1, second.ID), "the done bucket of the other view")
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 3, 4))
+
+		s2 := db.NewSession()
+		defer s2.Close()
+		seedEnteredAt(t, stale)
+		require.NoError(t, (&Task{ID: 2, Done: false}).Update(s2, u)) // task 2 sits in the done bucket
+		require.NoError(t, s2.Commit())
+
+		assertEnteredAtNow(t, enteredAtOf(t, 2, 4))
+	})
+	t.Run("completing a repeating task restarts it in every view while the bucket stays", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		second := createSecondKanbanView(t, u)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		s := db.NewSession()
+		defer s.Close()
+		require.NoError(t, (&Task{ID: 28, Done: true, RepeatAfter: 3600}).Update(s, u))
+		require.NoError(t, s.Commit())
+
+		db.AssertExists(t, "task_buckets", map[string]interface{}{"task_id": 28, "project_view_id": 4, "bucket_id": 1}, false)
+		assertEnteredAtNow(t, enteredAtOf(t, 28, 4))
+		assertEnteredAtNow(t, enteredAtOf(t, 28, second.ID))
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 1, 4))
+	})
+	t.Run("moving to another project sets it", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		seedEnteredAt(t, staleEnteredAt())
+
+		s := db.NewSession()
+		defer s.Close()
+		require.NoError(t, (&Task{ID: 1, ProjectID: 2}).Update(s, u))
+		require.NoError(t, s.Commit())
+
+		s2 := db.NewSession()
+		defer s2.Close()
+		rows := []*TaskBucket{}
+		require.NoError(t, s2.Where("task_id = ?", 1).Find(&rows))
+		require.NotEmpty(t, rows)
+		for _, row := range rows {
+			assert.EqualValues(t, 40, row.BucketID) // the default bucket of project 2
+			assertEnteredAtNow(t, row.EnteredAt)
+		}
+	})
+}

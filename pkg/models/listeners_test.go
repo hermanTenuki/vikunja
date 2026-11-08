@@ -878,6 +878,59 @@ func TestUpdateTasksInSavedFilterViews_DoneBucket(t *testing.T) {
 	})
 }
 
+func TestUpdateTasksInSavedFilterViews_EnteredAt(t *testing.T) {
+	setup := func(t *testing.T, taskID int64) (view *ProjectView, defaultBucket, doneBucket *Bucket) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+		view, defaultBucket = createKanbanFilterView(t, s, 9999, 9999, 1, "project = 1")
+		doneBucket = &Bucket{ProjectViewID: view.ID, Title: "done", CreatedByID: 1}
+		_, err := s.Insert(doneBucket)
+		require.NoError(t, err)
+		view.DoneBucketID = doneBucket.ID
+		_, err = s.ID(view.ID).Cols("done_bucket_id").Update(view)
+		require.NoError(t, err)
+		_, err = s.Insert(&TaskBucket{TaskID: taskID, ProjectViewID: view.ID, BucketID: defaultBucket.ID, EnteredAt: staleEnteredAt()})
+		require.NoError(t, err)
+		require.NoError(t, s.Commit())
+		return
+	}
+
+	t.Run("a task entering the filter gets it", func(t *testing.T) {
+		view, _, _ := setup(t, 1)
+
+		events.TestListener(t, &TasksBatchCreatedEvent{
+			Tasks: []*Task{{ID: 3, ProjectID: 1, Index: 3}},
+			Doer:  &user.User{ID: 1},
+		}, &UpdateTasksBatchInSavedFilterViews{})
+
+		assertEnteredAtNow(t, enteredAtOf(t, 3, view.ID))
+	})
+	t.Run("a done task moving into the done bucket gets it", func(t *testing.T) {
+		view, _, doneBucket := setup(t, 2)
+
+		events.TestListener(t, &TaskUpdatedEvent{
+			Task: &Task{ID: 2, ProjectID: 1, Done: true},
+			Doer: &user.User{ID: 1},
+		}, &UpdateTaskInSavedFilterViews{})
+
+		db.AssertExists(t, "task_buckets", map[string]interface{}{"task_id": 2, "project_view_id": view.ID, "bucket_id": doneBucket.ID}, false)
+		assertEnteredAtNow(t, enteredAtOf(t, 2, view.ID))
+	})
+	t.Run("a task that stays in its bucket keeps it", func(t *testing.T) {
+		view, defaultBucket, _ := setup(t, 1)
+		stale := staleEnteredAt()
+
+		events.TestListener(t, &TaskUpdatedEvent{
+			Task: &Task{ID: 1, ProjectID: 1},
+			Doer: &user.User{ID: 1},
+		}, &UpdateTaskInSavedFilterViews{})
+
+		db.AssertExists(t, "task_buckets", map[string]interface{}{"task_id": 1, "project_view_id": view.ID, "bucket_id": defaultBucket.ID}, false)
+		assertEnteredAtKept(t, stale, enteredAtOf(t, 1, view.ID))
+	})
+}
+
 // GHSA-4hv6-xc92-j86g
 func TestTOTPAccountLockRevokesSessions(t *testing.T) {
 	db.LoadAndAssertFixtures(t)

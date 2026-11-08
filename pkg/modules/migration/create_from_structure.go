@@ -736,6 +736,10 @@ func createProjectWithEverything(s *xorm.Session, project *models.ProjectWithTas
 			if tb == nil {
 				continue
 			}
+			enteredAt := tb.EnteredAt
+			if enteredAt.IsZero() {
+				enteredAt = time.Now()
+			}
 			_, hasTask := canonicalByOldID[tb.TaskID]
 			_, hasBucket := bucketsByOldID[tb.BucketID]
 			if !hasTask || !hasBucket {
@@ -745,6 +749,7 @@ func createProjectWithEverything(s *xorm.Session, project *models.ProjectWithTas
 				TaskID:        canonicalByOldID[tb.TaskID].ID,
 				BucketID:      bucketsByOldID[tb.BucketID].ID,
 				ProjectViewID: bucketsByOldID[tb.BucketID].ProjectViewID,
+				EnteredAt:     enteredAt,
 			})
 			bucketTaskIDs = append(bucketTaskIDs, canonicalByOldID[tb.TaskID].ID)
 		}

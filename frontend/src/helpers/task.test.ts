@@ -27,6 +27,9 @@ describe('task domain helpers', () => {
 	beforeEach(() => {
 		setActivePinia(createPinia())
 	})
+	afterEach(() => {
+		vi.useRealTimers()
+	})
 	it('fills wire defaults for fields explicitly set to undefined', () => {
 		expect(createTaskDraft({title: ' New task ', due_date: '2026-09-17T12:00:00Z'})).toMatchObject({
 			title: 'New task',
@@ -120,9 +123,34 @@ describe('task domain helpers', () => {
 			},
 			{id: 2, count: 0, tasks: []},
 		]
+		vi.useFakeTimers({toFake: ['Date']})
+		vi.setSystemTime(new Date('2026-11-07T12:00:00Z'))
 		const moved = moveTaskToBucket(buckets, {id: 4, position: 0, labels: null}, 2)
-		expect(moved[1].tasks).toEqual([{id: 4, bucket_id: 2, position: 8, labels: [{id: 7}]}])
+		expect(moved[1].tasks).toEqual([{
+			id: 4,
+			bucket_id: 2,
+			position: 8,
+			labels: [{id: 7}],
+			bucket_entered_at: '2026-11-07T12:00:00.000Z',
+		}])
 		expect(moved[0].tasks).toEqual([{id: 5, related_tasks: {subtask: [{id: 4, title: 'child'}]}}])
+	})
+	it('stamps the moved card with now, replacing its old time in the bucket', () => {
+		vi.useFakeTimers({toFake: ['Date']})
+		vi.setSystemTime(new Date('2026-11-07T12:00:00Z'))
+		const buckets: Bucket[] = [
+			{id: 1, count: 1, tasks: [{id: 4, bucket_entered_at: '2026-10-01T00:00:00Z'}]},
+			{id: 2, count: 0, tasks: []},
+		]
+		const moved = moveTaskToBucket(buckets, {id: 4}, 2)
+		expect(moved[1].tasks?.[0].bucket_entered_at).toBe('2026-11-07T12:00:00.000Z')
+	})
+	it('keeps the cached time in the bucket over a write response', () => {
+		const cached: Task = {id: 4, bucket_entered_at: '2026-10-01T00:00:00Z'}
+		expect(mergeTask(cached, {id: 4, bucket_entered_at: '2026-11-07T12:00:00Z'}).bucket_entered_at)
+			.toBe('2026-10-01T00:00:00Z')
+		expect(mergeTask({id: 4}, {id: 4, bucket_entered_at: '2026-11-07T12:00:00Z'}).bucket_entered_at)
+			.toBe('2026-11-07T12:00:00Z')
 	})
 	it('builds relative default reminders only for tasks with a due date', () => {
 		const defaults = [{relative_period: -900, relative_to: 'start_date'}]

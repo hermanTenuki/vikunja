@@ -740,6 +740,7 @@ func RegisterAddTaskToFilterViewCron() {
 						TaskID:        task.ID,
 						ProjectViewID: view.ID,
 						BucketID:      view.DefaultBucketID,
+						EnteredAt:     time.Now(),
 					}
 					newTaskBuckets = append(newTaskBuckets, tb)
 				}

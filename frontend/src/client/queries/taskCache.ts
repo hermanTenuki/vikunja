@@ -185,7 +185,10 @@ export function insertTaskIntoBoards(client: QueryClient, created: Task) {
 		client.setQueryData(key, {
 			...deduped,
 			buckets: deduped.buckets.map(bucket => bucket.id === target
-				? {...bucket, count: bucket.count + 1, tasks: [{...task, bucket_id: target, position}, ...bucket.tasks]}
+				? {...bucket, count: bucket.count + 1, tasks: [
+					{...task, bucket_id: target, position, bucket_entered_at: new Date().toISOString()},
+					...bucket.tasks,
+				]}
 				: bucket),
 		})
 	}
@@ -196,6 +199,23 @@ export function insertTaskIntoBoards(client: QueryClient, created: Task) {
 			refetchType: 'active',
 		})
 	}
+}
+
+// A completed repeat reopens the task in place, so only the server's reset tells the cards apart from a plain edit.
+export function resetBucketEnteredAt(client: QueryClient, id: number) {
+	const entered = new Date().toISOString()
+	client.setQueriesData<BoardData>({queryKey: kanbanKeys.all}, current => {
+		if (!current) return undefined
+		const buckets = current.buckets.map(bucket => bucket.tasks.some(task => task.id === id && task.bucket_entered_at)
+			? {
+				...bucket,
+				tasks: bucket.tasks.map(task => task.id === id && task.bucket_entered_at ? {...task, bucket_entered_at: entered} : task),
+			}
+			: bucket)
+		return buckets.some((bucket, index) => bucket !== current.buckets[index])
+			? {...current, buckets}
+			: undefined
+	})
 }
 
 export async function invalidateTaskMembership(

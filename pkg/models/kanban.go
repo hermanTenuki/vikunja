@@ -417,8 +417,8 @@ func (b *Bucket) Delete(s *xorm.Session, a web.Auth) (err error) {
 	// Remove all associations of tasks to that bucket
 	_, err = s.
 		Where("bucket_id = ?", b.ID).
-		Cols("bucket_id").
-		Update(&TaskBucket{BucketID: defaultBucketID})
+		Cols("bucket_id", "entered_at").
+		Update(&TaskBucket{BucketID: defaultBucketID, EnteredAt: time.Now()})
 	if err != nil {
 		return
 	}

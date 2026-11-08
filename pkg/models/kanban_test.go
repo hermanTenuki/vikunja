@@ -466,3 +466,123 @@ func TestBucket_CanDelete(t *testing.T) {
 		assert.False(t, can)
 	})
 }
+
+func TestBucket_Delete_EnteredAt(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	stale := staleEnteredAt()
+	seedEnteredAt(t, stale)
+
+	s := db.NewSession()
+	defer s.Close()
+	b := &Bucket{
+		ID:            2, // tasks 3, 4 and 5 are in it
+		ProjectID:     1,
+		ProjectViewID: 4,
+	}
+	require.NoError(t, b.Delete(s, &user.User{ID: 1}))
+	require.NoError(t, s.Commit())
+
+	for _, taskID := range []int64{3, 4, 5} {
+		db.AssertExists(t, "task_buckets", map[string]interface{}{"task_id": taskID, "bucket_id": 1}, false)
+		assertEnteredAtNow(t, enteredAtOf(t, taskID, 4), "task %d moved to the default bucket", taskID)
+	}
+	assertEnteredAtKept(t, stale, enteredAtOf(t, 1, 4))
+	assertEnteredAtKept(t, stale, enteredAtOf(t, 2, 4))
+}
+
+func TestGetTasksInBucketsForView_BucketEnteredAt(t *testing.T) {
+	u := &user.User{ID: 1}
+
+	readTasks := func(t *testing.T, viewID int64) (tasks []*Task) {
+		t.Helper()
+		s := db.NewSession()
+		defer s.Close()
+		tc := &TaskCollection{ProjectViewID: viewID, ProjectID: 1}
+		result, _, _, err := tc.ReadAll(s, u, "", 0, 0)
+		require.NoError(t, err)
+		buckets, is := result.([]*Bucket)
+		require.True(t, is)
+		for _, bucket := range buckets {
+			tasks = append(tasks, bucket.Tasks...)
+		}
+		require.NotEmpty(t, tasks)
+		return tasks
+	}
+
+	t.Run("manual view", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		for _, task := range readTasks(t, 4) {
+			assertEnteredAtKept(t, stale, task.BucketEnteredAt, "task %d", task.ID)
+		}
+	})
+	t.Run("NULL rows are not filled", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+
+		for _, task := range readTasks(t, 4) {
+			assert.True(t, task.BucketEnteredAt.IsZero(), "task %d", task.ID)
+		}
+	})
+	t.Run("view with buckets by filter", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		view := &ProjectView{
+			ID:                      1,
+			ProjectID:               1,
+			Title:                   "List",
+			ViewKind:                ProjectViewKindKanban,
+			BucketConfigurationMode: BucketConfigurationModeFilter,
+			BucketConfiguration: []*ProjectViewBucketConfiguration{
+				{Title: "Open", Filter: &TaskCollection{Filter: "done = false"}},
+			},
+		}
+		require.NoError(t, view.Update(s, u))
+		// A stored row, which only a manual view may read.
+		_, err := s.Insert(&TaskBucket{TaskID: 1, BucketID: 1, ProjectViewID: 1, EnteredAt: staleEnteredAt()})
+		require.NoError(t, err)
+		require.NoError(t, s.Commit())
+		_ = s.Close()
+
+		for _, task := range readTasks(t, 1) {
+			assert.True(t, task.BucketEnteredAt.IsZero(), "task %d", task.ID)
+		}
+	})
+	t.Run("load more of a manual view reads the flat tasks of one bucket", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		stale := staleEnteredAt()
+		seedEnteredAt(t, stale)
+
+		s := db.NewSession()
+		defer s.Close()
+		tc := &TaskCollection{ProjectViewID: 4, ProjectID: 1, Filter: "bucket_id = 2"}
+		tc.SetForceFlatTasks()
+		result, _, _, err := tc.ReadAll(s, u, "", 0, 0)
+		require.NoError(t, err)
+		tasks, is := result.([]*Task)
+		require.True(t, is)
+		require.NotEmpty(t, tasks)
+		for _, task := range tasks {
+			assertEnteredAtKept(t, stale, task.BucketEnteredAt, "task %d", task.ID)
+		}
+	})
+	t.Run("a list view leaves it zero", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+		// A stored row, which only a manual kanban view may read.
+		_, err := s.Insert(&TaskBucket{TaskID: 1, BucketID: 1, ProjectViewID: 1, EnteredAt: staleEnteredAt()})
+		require.NoError(t, err)
+
+		tc := &TaskCollection{ProjectViewID: 1, ProjectID: 1}
+		result, _, _, err := tc.ReadAll(s, u, "", 0, 0)
+		require.NoError(t, err)
+		tasks, is := result.([]*Task)
+		require.True(t, is)
+		require.NotEmpty(t, tasks)
+		for _, task := range tasks {
+			assert.True(t, task.BucketEnteredAt.IsZero(), "task %d", task.ID)
+		}
+	})
+}

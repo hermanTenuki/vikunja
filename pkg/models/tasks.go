@@ -164,6 +164,8 @@ type Task struct {
 	// The bucket id. Will only be populated when the task is accessed via a view with buckets.
 	// Can be used to move a task between buckets. In that case, the new bucket must be in the same view as the old one.
 	BucketID int64 `xorm:"-" json:"bucket_id" doc:"The bucket the task is in. Only populated when the task is accessed via a view with buckets. To move a task between buckets, the new bucket must be in the same view as the old one."`
+	// BucketEnteredAt is set from task_buckets for kanban views with manually configured buckets only.
+	BucketEnteredAt time.Time `xorm:"-" json:"bucket_entered_at,omitzero" readOnly:"true" doc:"When the task entered the bucket it is shown in. Only populated when the task is accessed via a view with manually configured buckets. Set by the server; ignored on write."`
 
 	// All buckets across all views this task is part of. Only present when fetching tasks with the `expand` parameter set to `buckets`.
 	Buckets []*Bucket `xorm:"-" json:"buckets,omitempty" readOnly:"true" doc:"The task's buckets across all views. Only present when requested via the buckets expand option."`
@@ -784,6 +786,31 @@ func addBucketsToTasks(s *xorm.Session, a web.Auth, taskIDs []int64, taskMap map
 	return nil
 }
 
+// addBucketEnteredAtToTasks sets BucketEnteredAt from task_buckets for kanban views with manually configured buckets.
+// Filter-mode buckets are not stored, so there is no entered_at for them.
+func addBucketEnteredAtToTasks(s *xorm.Session, view *ProjectView, taskIDs []int64, taskMap map[int64]*Task) (err error) {
+	if view == nil || view.BucketConfigurationMode != BucketConfigurationModeManual {
+		return nil
+	}
+
+	for chunk := range slices.Chunk(taskIDs, maxInListSize) {
+		taskBuckets := []*TaskBucket{}
+		err = s.
+			Where("project_view_id = ?", view.ID).
+			In("task_id", chunk).
+			Cols("task_id", "entered_at").
+			Find(&taskBuckets)
+		if err != nil {
+			return err
+		}
+		for _, tb := range taskBuckets {
+			taskMap[tb.TaskID].BucketEnteredAt = tb.EnteredAt
+		}
+	}
+
+	return nil
+}
+
 // This function takes a map with pointers and returns a slice with pointers to tasks
 // It adds more stuff like assignees/labels/etc to a bunch of tasks
 //
@@ -855,6 +882,11 @@ func addMoreInfoToTasks(s *xorm.Session, taskMap map[int64]*Task, a web.Auth, vi
 		for _, position := range positions {
 			positionsMap[position.TaskID] = position
 		}
+	}
+
+	err = addBucketEnteredAtToTasks(s, view, taskIDs, taskMap)
+	if err != nil {
+		return err
 	}
 
 	var reactions map[int64]ReactionMap
@@ -1351,6 +1383,7 @@ func setTasksInBucketInViews(s *xorm.Session, views []*ProjectView, tasks []*Tas
 					BucketID:      bucketID,
 					TaskID:        t.ID,
 					ProjectViewID: view.ID,
+					EnteredAt:     time.Now(),
 				})
 			}
 		}
@@ -1614,6 +1647,11 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 	// "To-Do" column. See #2573.
 	if t.ProjectID == ot.ProjectID && t.isRepeating() && !ot.Done && t.Done {
 		err = t.moveTaskToDefaultBuckets(s, a, views)
+		if err != nil {
+			return
+		}
+		// The counter restarts for every completed repeat, in all views, even if the bucket stays the same.
+		err = resetTaskBucketsEnteredAt(s, t.ID)
 		if err != nil {
 			return
 		}
