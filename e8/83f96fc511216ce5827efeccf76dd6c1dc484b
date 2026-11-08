@@ -1,0 +1,69 @@
+pkg/models/tasks_test.go
+  s_0ae71c0f6ffecf::t_710128d335b5d5 242
+  s_0ae71c0f6ffecf::t_6695d79b5edec3 245,247-252
+  s_0ae71c0f6ffecf::t_0f040b76853569 474,476
+  s_0ae71c0f6ffecf::t_4db570efc310c1 477-478,481-484,486
+  s_0ae71c0f6ffecf::t_35f61a79f9702e 497-498
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 234-241,243-244,246,253-266,469-473,475,479-480,485,487-496,499-500
+frontend/src/client/queries/trash.test.ts
+  s_0ae71c0f6ffecf::t_44916b9aa50e5e 257,261
+  s_0ae71c0f6ffecf::t_b5b755fe3665d3 206-207
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 8,145-159,162-165,168-171
+  s_0ae71c0f6ffecf::t_46330a6ac23fd6 160-161,166-167
+  s_0ae71c0f6ffecf::t_a2b3b105659823 172-173
+pkg/models/task_collection.go
+  s_0ae71c0f6ffecf::t_cd3c51f03b94f1 200
+frontend/tests/factories/task_positions.ts
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 1-13
+pkg/models/saved_filter_positions_test.go
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 383-385,411,424,428,431-435
+  s_0ae71c0f6ffecf::t_62becfc3c27975 96-97,100,102
+frontend/src/client/queries/taskCache.test.ts
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 245-253,255-307
+  s_0ae71c0f6ffecf::t_1329e9ba3be0e8 254
+pkg/models/listeners_test.go
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 166-167
+pkg/models/tasks.go
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 1398,1625
+frontend/tests/e2e/task/task.spec.ts
+  s_0ae71c0f6ffecf::t_1675649135723e 109-111,118-124
+  s_0ae71c0f6ffecf::t_1043353eca2ee9 20
+frontend/src/client/queries/taskMutations.ts
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 203-204,221-222
+frontend/src/client/queries/taskCache.ts
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 11,145-157,193
+  s_0ae71c0f6ffecf::t_b4eae18cdb6954 197
+pkg/models/task_position_test.go
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 20,590-591,593-594,599
+pkg/models/saved_filters.go
+  s_0ae71c0f6ffecf::t_cd3c51f03b94f1 439,612
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 461
+frontend/src/client/queries/taskMutations.test.ts
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 570
+  s_0ae71c0f6ffecf::t_13ce37473e4d1b 204,211-213
+  s_0ae71c0f6ffecf::t_78ead84c708bb3 446-447
+frontend/src/components/project/views/ProjectKanban.vue
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 668-669,679,684
+pkg/models/bulk_task_create_test.go
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 107,112-113,115,119,124-126,129,134,144-146
+pkg/models/task_position.go
+  s_0ae71c0f6ffecf::t_8ab5bf0457c154 592-593,633-634,653,655-656,669,792
+  s_0ae71c0f6ffecf::t_cd3c51f03b94f1 744
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e883f96fc511216ce5827efeccf76dd6c1dc484b",
+  "prompts": {},
+  "sessions": {
+    "s_0ae71c0f6ffecf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9f172c3b-7615-41f3-800f-77be7596d7a6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
