@@ -68,20 +68,6 @@
 			<p class="help">
 				{{ $t('user.settings.general.defaultDueTimeDescription') }}
 			</p>
-			<FormField
-				v-if="hasFilters"
-				:label="$t('user.settings.general.filterUsedOnOverview')"
-				layout="two-col"
-			>
-				<ProjectSearch
-					v-model="filterUsedInOverview"
-					:saved-filters-only="true"
-				/>
-			</FormField>
-			<FormCheckbox
-				v-model="settings.frontend_settings.show_last_viewed"
-				:label="$t('user.settings.general.showLastViewed')"
-			/>
 			<FormCheckbox
 				v-model="settings.email_reminders_enabled"
 				:label="$t('user.settings.general.emailReminders')"
@@ -338,7 +324,6 @@ import {useProjects} from '@/composables/useProjects'
 import {useAuthStore} from '@/stores/auth'
 import {useConfigStore} from '@/stores/config'
 import {taskRemindersFromSettings, type UserSettings} from '@/helpers/userSettings'
-import {isSavedFilterProject} from '@/client/queries/projects'
 import {DEFAULT_PROJECT_VIEW_SETTINGS} from '@/constants/projectView'
 import {PRIORITIES} from '@/constants/priorities'
 import {DATE_DISPLAY} from '@/constants/dateDisplay'
@@ -509,16 +494,6 @@ const defaultProject = computed({
 		settings.value.default_project_id = l ? l.id : DEFAULT_PROJECT_ID
 	},
 })
-const filterUsedInOverview = computed({
-	get: () => {
-		const filterId = settings.value.frontend_settings.filter_id_used_on_overview
-		return filterId === null ? undefined : projectList.projects[filterId]
-	},
-	set(l) {
-		settings.value.frontend_settings.filter_id_used_on_overview = l ? l.id : null
-	},
-})
-const hasFilters = computed(() => projectList.projectsArray.some(isSavedFilterProject))
 const loading = updateUserSettings.isPending
 
 async function updateSettings() {

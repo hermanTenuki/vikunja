@@ -73,9 +73,7 @@ test.describe('Projects', () => {
 		await expect(page.locator('.project-title')).toContainText(newProjectName)
 		await expect(page.locator('.project-title')).not.toContainText(projects[0].title)
 		await expect(page.locator('.menu-container .menu-list').getByRole('listitem').filter({hasText: newProjectName})).toBeVisible()
-		await page.goto('/')
-		await expect(page.locator('.project-grid')).toContainText(newProjectName)
-		await expect(page.locator('.project-grid')).not.toContainText(projects[0].title)
+		// The home page no longer lists projects (the project grid and "last viewed" are gone); the sidebar check above covers the new name.
 	})
 
 	test('Should remove a project when deleting it', async ({authenticatedPage: page}) => {

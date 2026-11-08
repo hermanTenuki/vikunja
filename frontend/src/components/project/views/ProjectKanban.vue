@@ -142,6 +142,24 @@
 											{{ $t('project.kanban.defaultBucket') }}
 										</DropdownItem>
 										<DropdownItem
+											v-if="authStore.authUser && projectId > 0"
+											v-tooltip="$t('project.kanban.homeAttentionHint')"
+											:icon-class="{'has-text-primary': isAttentionBucket(bucket.id)}"
+											icon="eye"
+											@click.stop="toggleAttentionBucket(bucket.id)"
+										>
+											{{ $t('project.kanban.homeAttention') }}
+										</DropdownItem>
+										<DropdownItem
+											v-if="authStore.authUser && projectId > 0"
+											v-tooltip="$t('project.kanban.homeHiddenHint')"
+											:icon-class="{'has-text-danger': isHiddenBucket(bucket.id)}"
+											icon="eye-slash"
+											@click.stop="toggleHiddenBucket(bucket.id)"
+										>
+											{{ $t('project.kanban.homeHidden') }}
+										</DropdownItem>
+										<DropdownItem
 											icon="angles-up"
 											@click.stop="() => collapseBucket(bucket)"
 										>
@@ -327,6 +345,7 @@ import {useOpenCreatedTask} from '@/composables/useOpenCreatedTask'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
 import {useTaskDragState} from '@/composables/useTaskDragState'
 import {useAuthStore} from '@/stores/auth'
+import {useHomeBucketMarks} from '@/composables/useHomeBucketMarks'
 
 import ProjectWrapper from '@/components/project/ProjectWrapper.vue'
 import FilterPopup from '@/components/project/partials/FilterPopup.vue'
@@ -375,6 +394,7 @@ const MIN_SCROLL_HEIGHT_PERCENT = 0.25
 
 const {t} = useI18n({useScope: 'global'})
 const isCurrentProject = ({projectId: id}: {projectId: number}) => projectId.value === id
+const {isAttentionBucket, isHiddenBucket, toggleAttentionBucket, toggleHiddenBucket} = useHomeBucketMarks()
 const updateDefaultBucket = useUpdateProjectViewMutation(t('project.kanban.defaultBucketSavedSuccess'), isCurrentProject)
 const updateDoneBucket = useUpdateProjectViewMutation(t('project.kanban.doneBucketSavedSuccess'), isCurrentProject)
 

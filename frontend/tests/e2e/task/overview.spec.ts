@@ -1,13 +1,25 @@
 import {test, expect} from '../../support/fixtures'
 import {ProjectFactory} from '../../factories/project'
-import {seed} from '../../support/seed'
+import {ProjectViewFactory} from '../../factories/project_view'
 import {TaskFactory} from '../../factories/task'
 import {BucketFactory} from '../../factories/bucket'
+import {TaskBucketFactory} from '../../factories/task_buckets'
+import {LabelFactory} from '../../factories/labels'
+import {LabelTaskFactory} from '../../factories/label_task'
 import {updateUserSettings} from '../../support/updateUserSettings'
 import {createDefaultViews} from '../project/prepareProjects'
 import type {APIRequestContext} from '@playwright/test'
 
-async function seedTasks(apiContext: APIRequestContext, numberOfTasks = 50, startDueDate = new Date()) {
+const DAY = 24 * 60 * 60 * 1000
+
+const upcomingRows = '[data-cy="homeTaskSection"][data-kind="upcoming"] .task'
+const favoritesSection = '[data-cy="homeTaskSection"][data-kind="favorites"]'
+
+function inDays(days: number) {
+	return new Date(Date.now() + days * DAY).toISOString()
+}
+
+async function seedTasks(numberOfTasks = 50, startDueDate = new Date()) {
 	const project = (await ProjectFactory.create())[0]
 	const views = await createDefaultViews(project.id)
 	await BucketFactory.create(1, {
@@ -34,120 +46,151 @@ async function seedTasks(apiContext: APIRequestContext, numberOfTasks = 50, star
 	return {tasks, project}
 }
 
+// One project with a manual kanban (Backlog, In progress, Cancelled), starred so that it shows up as a board tile.
+async function seedKanban(apiContext: APIRequestContext, userToken: string) {
+	const [project] = await ProjectFactory.create(1, {title: 'Goals'})
+	const [view] = await ProjectViewFactory.create(1, {
+		id: 1,
+		project_id: project.id,
+		view_kind: 3,
+		bucket_configuration_mode: 1,
+	})
+	const [backlog, inProgress, cancelled] = await BucketFactory.create(3, {
+		project_view_id: view.id,
+		title: (i: number) => ['Backlog', 'In progress', 'Cancelled'][i - 1],
+	})
+	const starred = await apiContext.post(`projects/${project.id}`, {
+		headers: {Authorization: `Bearer ${userToken}`},
+		data: {title: project.title, is_favorite: true},
+	})
+	expect(starred.ok()).toBeTruthy()
+	return {project, view, backlog, inProgress, cancelled}
+}
+
+async function seedTaskInBucket(
+	bucket: {id: number},
+	view: {id: number},
+	task: {id: number, project_id: number, title: string, due_date?: string},
+) {
+	await TaskFactory.create(1, task, false)
+	await TaskBucketFactory.create(1, {task_id: task.id, bucket_id: bucket.id, project_view_id: view.id}, false)
+}
+
 test.describe('Home Page Task Overview', () => {
-	test('Should show tasks with a near due date first on the home page overview', async ({authenticatedPage: page, apiContext}) => {
-		const taskCount = 50
-		const {tasks} = await seedTasks(apiContext, taskCount)
+	test('Should show a task in a bucket marked for the home page as an attention card', async ({authenticatedPage: page, apiContext, userToken}) => {
+		const {project, view, backlog, inProgress} = await seedKanban(apiContext, userToken)
+		await seedTaskInBucket(inProgress, view, {id: 1, project_id: project.id, title: 'Pick the hardware'})
+		await seedTaskInBucket(backlog, view, {id: 2, project_id: project.id, title: 'Someday task'})
+		await updateUserSettings(apiContext, userToken, {frontend_settings: {home_attention_bucket_ids: [inProgress.id]}})
 
 		await page.goto('/')
-		const taskElements = await page.locator('[data-cy="showTasks"] .card .task').all()
-		for (let index = 0; index < taskElements.length; index++) {
-			const taskText = await taskElements[index].innerText()
-			expect(taskText).toContain(tasks[index].title)
-		}
+
+		const cards = page.locator('[data-cy="homeAttentionCard"]')
+		await expect(cards).toHaveCount(1)
+		await expect(cards.first()).toContainText('Pick the hardware')
+		await expect(cards.first().locator('[data-cy="homeAttentionBucket"]')).toHaveText('In progress')
+		await expect(page.locator('[data-cy="homeAttentionTotal"]')).toHaveText('1')
+
+		await cards.first().click()
+		await expect(page).toHaveURL(/\/tasks\/1$/)
 	})
 
-	test('Should show overdue tasks first, then show other tasks', async ({authenticatedPage: page, apiContext}) => {
-		const now = new Date()
-		const oldDate = new Date(new Date(now).setDate(now.getDate() - 14))
-		const taskCount = 50
-		const {tasks} = await seedTasks(apiContext, taskCount, oldDate)
+	test('Should leave a task in a bucket hidden from the home page out of the upcoming deadlines and the board tile', async ({authenticatedPage: page, apiContext, userToken}) => {
+		const {project, view, backlog, cancelled} = await seedKanban(apiContext, userToken)
+		await seedTaskInBucket(cancelled, view, {id: 1, project_id: project.id, title: 'Cancelled soon', due_date: inDays(2)})
+		await seedTaskInBucket(backlog, view, {id: 2, project_id: project.id, title: 'Visible soon', due_date: inDays(4)})
+		await updateUserSettings(apiContext, userToken, {frontend_settings: {home_hidden_bucket_ids: [cancelled.id]}})
 
 		await page.goto('/')
-		const taskElements = await page.locator('[data-cy="showTasks"] .card .task').all()
-		for (let index = 0; index < taskElements.length; index++) {
-			const taskText = await taskElements[index].innerText()
-			expect(taskText).toContain(tasks[index].title)
-		}
+
+		const rows = page.locator(upcomingRows)
+		await expect(rows).toHaveCount(1)
+		await expect(rows.first()).toContainText('Visible soon')
+		const legend = page.locator('[data-cy="homeBoardTile"] [data-cy="homeBoardBucket"]')
+		await expect(legend).toHaveText(['Backlog 1', 'In progress 0'])
 	})
 
-	test('Should show a new task with a very soon due date at the top', async ({authenticatedPage: page, apiContext}) => {
-		const {tasks, project} = await seedTasks(apiContext, 49)
-		const newTaskTitle = 'New Task'
+	test('Should open the kanban view when a favorite board tile is clicked', async ({authenticatedPage: page, apiContext, userToken}) => {
+		const {project, view} = await seedKanban(apiContext, userToken)
 
 		await page.goto('/')
-		await page.waitForLoadState('networkidle')
+		await page.locator('[data-cy="homeBoardTile"]').click()
 
-		await TaskFactory.create(1, {
-			id: 999,
-			title: newTaskTitle,
-			project_id: project.id,
-			due_date: new Date().toISOString(),
-		}, false)
-
-		await page.goto(`/projects/${project.id}/1`)
-		await page.waitForLoadState('networkidle')
-		// Wait for the tasks list to load and contain the new task
-		await expect(page.locator('.tasks')).toContainText(newTaskTitle)
-		await page.goto('/')
-		await page.waitForLoadState('networkidle')
-		await expect(page.locator('[data-cy="showTasks"] .card .task').first()).toContainText(newTaskTitle)
+		await expect(page).toHaveURL(new RegExp(`/projects/${project.id}/${view.id}$`))
+		await expect(page.locator('.kanban')).toBeVisible()
 	})
 
-	test('Should not show a new task without a date at the bottom when there are > 50 tasks', async ({authenticatedPage: page, apiContext}) => {
-		// We're not using the api here to create the task in order to verify the flow
-		const {tasks} = await seedTasks(apiContext, 100)
-		const newTaskTitle = 'New Task'
+	test('Should switch to the favorite tasks once a task is starred and skip favorites from hidden buckets', async ({authenticatedPage: page, apiContext, userToken}) => {
+		const {project, view, backlog, cancelled} = await seedKanban(apiContext, userToken)
+		await seedTaskInBucket(backlog, view, {id: 1, project_id: project.id, title: 'Plain task', due_date: inDays(3)})
+		await seedTaskInBucket(cancelled, view, {id: 2, project_id: project.id, title: 'Starred but cancelled'})
+		const starred = await apiContext.put('/api/v2/tasks/2', {
+			headers: {Authorization: `Bearer ${userToken}`},
+			data: {title: 'Starred but cancelled', is_favorite: true},
+		})
+		expect(starred.ok()).toBeTruthy()
+		await updateUserSettings(apiContext, userToken, {frontend_settings: {home_hidden_bucket_ids: [cancelled.id]}})
 
 		await page.goto('/')
-		await page.waitForLoadState('networkidle')
 
-		await page.goto(`/projects/${tasks[0].project_id}/1`)
-		await page.waitForLoadState('networkidle')
-		const taskResponsePromise = page.waitForResponse(response =>
-			response.url().includes('/api/v2/projects/') &&
-			response.url().includes('/tasks/bulk') &&
-			response.request().method() === 'POST',
+		// The only favorite sits in a hidden bucket, so the upcoming deadlines are shown instead.
+		await expect(page.locator(upcomingRows)).toHaveCount(1)
+		await expect(page.locator(upcomingRows).first()).toContainText('Plain task')
+		await expect(page.locator(favoritesSection)).toHaveCount(0)
+
+		const starRequest = page.waitForResponse(response =>
+			response.url().includes('/tasks/1') && response.request().method() === 'PATCH',
 		)
-		await page.locator('.task-add textarea').fill(newTaskTitle)
-		await page.locator('.task-add textarea').press('Enter')
-		await taskResponsePromise
-		await page.goto('/')
-		await page.waitForLoadState('networkidle')
-		await expect(page.locator('[data-cy="showTasks"]')).not.toContainText(newTaskTitle)
+		await page.locator(upcomingRows).first().locator('.favorite').click()
+		await starRequest
+
+		const favorites = page.locator(`${favoritesSection} .task`)
+		await expect(favorites).toHaveCount(1)
+		await expect(favorites.first()).toContainText('Plain task')
+		await expect(page.locator(favoritesSection)).not.toContainText('Starred but cancelled')
 	})
 
-	test('Should show a new task without a date at the bottom when there are < 50 tasks', async ({authenticatedPage: page, apiContext}) => {
-		const {project} = await seedTasks(apiContext, 40)
-		const newTaskTitle = 'New Task'
-		await TaskFactory.create(1, {
-			id: 999,
-			title: newTaskTitle,
-			project_id: project.id,
-		}, false)
+	test('Should show tasks with a near due date first in the upcoming deadlines', async ({authenticatedPage: page}) => {
+		const {tasks} = await seedTasks(50, new Date(Date.now() - DAY))
 
 		await page.goto('/')
-		await page.waitForLoadState('networkidle')
-		await expect(page.locator('[data-cy="showTasks"]')).toContainText(newTaskTitle)
+
+		// Tasks are due every second day starting tomorrow: +1 ... +13 fall into the 14 day window, the next one (+15) does not.
+		const rows = page.locator(upcomingRows)
+		await expect(rows.first()).toContainText(tasks[0].title)
+		await expect(rows).toHaveCount(7)
+		for (let index = 0; index < 7; index++) {
+			await expect(rows.nth(index)).toContainText(tasks[index].title)
+		}
+		await expect(page.locator('[data-cy="homeTaskSection"]')).not.toContainText(tasks[20].title)
 	})
 
-	test('Should show a task without a due date added via default project at the bottom', async ({authenticatedPage: page, apiContext}) => {
-		const {project} = await seedTasks(apiContext, 40)
+	test('Should show overdue tasks first and at most 10 rows in the upcoming deadlines', async ({authenticatedPage: page}) => {
+		const oldDate = new Date(Date.now() - 14 * DAY)
+		const {tasks} = await seedTasks(50, oldDate)
 
-		// Navigate first to get access to localStorage
 		await page.goto('/')
-		await page.waitForLoadState('networkidle')
-		const token = await page.evaluate(() => localStorage.getItem('token'))
 
-		await updateUserSettings(apiContext, token, {
+		const rows = page.locator(upcomingRows)
+		await expect(rows).toHaveCount(10)
+		for (let index = 0; index < 10; index++) {
+			await expect(rows.nth(index)).toContainText(tasks[index].title)
+		}
+		await expect(rows.first()).toHaveAttribute('data-is-overdue', 'true')
+	})
+
+	test('Should open a task created from the home page', async ({authenticatedPage: page, apiContext, userToken}) => {
+		const {project} = await seedTasks(1)
+		await updateUserSettings(apiContext, userToken, {
 			default_project_id: project.id,
 			overdue_tasks_reminders_time: '9:00',
 		})
+		await page.goto('/')
 
 		const newTaskTitle = 'New Task'
-		// Reload page to apply the new settings
-		await page.reload()
-
-		// Wait for page to be fully loaded
-		await page.waitForLoadState('networkidle')
-
-		// Wait for the add task input to be visible and ready
 		const addTaskInput = page.locator('.add-task-textarea')
 		await expect(addTaskInput).toBeVisible()
-
 		await addTaskInput.fill(newTaskTitle)
-
-		// Wait for the task creation request to complete
 		const createTaskPromise = page.waitForResponse(response =>
 			response.url().includes('/api/v2/projects/') &&
 			response.url().includes('/tasks/bulk') &&
@@ -156,17 +199,31 @@ test.describe('Home Page Task Overview', () => {
 		await addTaskInput.press('Enter')
 		await createTaskPromise
 
-		// The new task opens as a page; back on the overview it is listed
 		await expect(page).toHaveURL(/\/tasks\/\d+$/)
-		await page.goBack()
+		await expect(page.locator('.task-view h1[contenteditable]')).toHaveText(newTaskTitle)
+	})
 
-		// Wait for the task to appear in the list (no due date tasks appear at the bottom)
-		await expect(page.locator('[data-cy="showTasks"] .card .task').last()).toContainText(newTaskTitle, {timeout: 10000})
+	test('Should show the label filtered task list instead of the dashboard for a labels link', async ({authenticatedPage: page}) => {
+		const project = (await ProjectFactory.create())[0]
+		await createDefaultViews(project.id)
+		const [label] = await LabelFactory.create(1, {title: 'Errands'})
+		await TaskFactory.create(2, {
+			id: (i: number) => i,
+			project_id: project.id,
+			title: (i: number) => i === 1 ? 'Labelled task' : 'Unlabelled task',
+			due_date: inDays(3),
+		})
+		await LabelTaskFactory.create(1, {task_id: 1, label_id: label.id}, false)
+
+		await page.goto(`/?labels=${label.id}`)
+
+		await expect(page.locator('[data-cy="showTasks"]')).toContainText('Labelled task')
+		await expect(page.locator('[data-cy="showTasks"]')).not.toContainText('Unlabelled task')
+		await expect(page.locator('[data-cy="homeDashboard"]')).toHaveCount(0)
 	})
 
 	test('Should show the cta buttons for new project when there are no tasks', async ({authenticatedPage: page}) => {
-		// Need a project so that ShowTasks renders (which sets tasksLoaded=true),
-		// but no tasks so the ImportHint becomes visible.
+		// The import hint is not gated by the dashboard: a project without tasks is enough for it to show.
 		const project = (await ProjectFactory.create())[0]
 		await createDefaultViews(project.id)
 
@@ -175,11 +232,12 @@ test.describe('Home Page Task Overview', () => {
 		await expect(page.locator('.home.app-content .content')).toContainText('Import your projects and tasks from other services into Vikunja:')
 	})
 
-	test('Should not show the cta buttons for new project when there are tasks', async ({authenticatedPage: page, apiContext}) => {
-		await seedTasks(apiContext)
+	test('Should not show the cta buttons for new project when there are tasks', async ({authenticatedPage: page}) => {
+		await seedTasks()
 
 		await page.goto('/')
 
+		await expect(page.locator('[data-cy="homeTaskSection"]')).toBeVisible()
 		await expect(page.locator('.home.app-content .content')).not.toContainText('You can create a new project for your new tasks:')
 		await expect(page.locator('.home.app-content .content')).not.toContainText('Or import your projects and tasks from other services into Vikunja:')
 	})

@@ -1,6 +1,9 @@
 <template>
 	<div class="content has-text-centered">
-		<h1 v-if="salutation">
+		<h1
+			v-if="salutation"
+			class="home-salutation"
+		>
 			{{ salutation }}
 		</h1>
 
@@ -20,29 +23,24 @@
 			</RouterLink>
 		</Message>
 		<AddTask
-			class="is-max-width-desktop"
+			class="is-max-width-desktop home-add-task"
 			@tasksAdded="updateTaskKey"
 		/>
-		<ImportHint v-if="tasksLoaded" />
-		<div
-			v-if="authStore.settings.frontend_settings.show_last_viewed !== false && projectHistory.length > 0"
-			class="is-max-width-desktop has-text-start mbs-4"
-		>
-			<h2>{{ $t('home.lastViewed') }}</h2>
-			<ProjectCardGrid
-				v-cy="'projectCardGrid'"
-				:projects="projectHistory"
-				:show-even-number-of-projects="true"
+		<template v-if="labelIds">
+			<ImportHint v-if="tasksLoaded" />
+			<ShowTasks
+				v-if="projectList.hasProjects"
+				:key="showTasksKey"
+				:label-ids="labelIds"
+				class="show-tasks"
+				@tasksLoaded="tasksLoaded = true"
+				@clearLabelFilter="handleClearLabelFilter"
 			/>
-		</div>
-		<ShowTasks
-			v-if="projectList.hasProjects"
-			:key="showTasksKey"
-			:label-ids="labelIds"
-			class="show-tasks"
-			@tasksLoaded="tasksLoaded = true"
-			@clearLabelFilter="handleClearLabelFilter"
-		/>
+		</template>
+		<template v-else>
+			<ImportHint />
+			<HomeDashboard v-if="authStore.authenticated" />
+		</template>
 	</div>
 </template>
 
@@ -52,11 +50,10 @@ import {useRoute, useRouter} from 'vue-router'
 
 import Message from '@/components/misc/Message.vue'
 import ShowTasks from '@/views/tasks/ShowTasks.vue'
-import ProjectCardGrid from '@/components/project/partials/ProjectCardGrid.vue'
 import AddTask from '@/components/tasks/AddTask.vue'
 import ImportHint from '@/components/home/ImportHint.vue'
+import HomeDashboard from '@/components/home/HomeDashboard.vue'
 
-import {getHistory} from '@/modules/projectHistory'
 import {parseDateOrNull} from '@/helpers/parseDateOrNull'
 import {parseQuickAddPrefill, QUICK_ADD_PREFILL_PARAMS} from '@/helpers/quickAddPrefill'
 import {formatDateSince, formatDisplayDate} from '@/helpers/time/formatDate'
@@ -85,17 +82,6 @@ watch(() => route.query, query => {
 	QUICK_ADD_PREFILL_PARAMS.forEach(param => delete rest[param])
 	router.replace({name: 'home', query: rest})
 }, {immediate: true})
-
-const projectHistory = computed(() => {
-	// If we don't check this, it tries to load the project background right after logging out	
-	if(!authStore.authenticated) {
-		return []
-	}
-	
-	return getHistory()
-		.map(l => projectList.projects[l.id])
-		.filter(l => Boolean(l))
-})
 
 const tasksLoaded = ref(false)
 
@@ -131,5 +117,23 @@ function handleClearLabelFilter() {
 <style scoped lang="scss">
 .show-tasks {
 	margin-block-start: 2rem;
+}
+
+@media screen and (max-width: $tablet) {
+	.content {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.home-add-task {
+		order: -1;
+		inline-size: 100%;
+		margin-block-end: 1rem;
+	}
+
+	.home-salutation {
+		font-size: 1.25rem;
+		text-align: start;
+	}
 }
 </style>

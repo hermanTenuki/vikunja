@@ -33,6 +33,8 @@ export interface FrontendSettings {
 	quick_add_default_reminders: {relative_period?: number}[]
 	time_tracking_default_start?: string
 	default_due_time?: string
+	home_attention_bucket_ids: readonly number[]
+	home_hidden_bucket_ids: readonly number[]
 }
 
 export function taskRemindersFromSettings(
@@ -88,5 +90,7 @@ export function defaultFrontendSettings(): FrontendSettings {
 		default_due_time: undefined,
 		time_tracking_default_start: '09:00',
 		quick_add_default_reminders: [],
+		home_attention_bucket_ids: [],
+		home_hidden_bucket_ids: [],
 	}
 }

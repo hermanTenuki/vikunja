@@ -704,4 +704,56 @@ test.describe('Project View Kanban', () => {
 			.find(item => item.id === task.id)
 		expect(Date.now() - new Date(stored.bucket_entered_at).getTime()).toBeLessThan(5 * 60_000)
 	})
+
+	test.describe('Home page marks', () => {
+		const attentionItem = (bucket) => bucket.locator('.bucket-header .dropdown-item').filter({hasText: 'Show on home'})
+		const hiddenItem = (bucket) => bucket.locator('.bucket-header .dropdown-item').filter({hasText: 'Hide from home'})
+
+		async function openMenu(bucket) {
+			await bucket.locator('.bucket-header .dropdown.options .dropdown-trigger').click()
+		}
+
+		async function toggle(page, bucket, item) {
+			await openMenu(bucket)
+			const saved = page.waitForResponse(response => response.url().includes('/user/settings') && response.request().method() !== 'GET')
+			await item(bucket).click()
+			await saved
+		}
+
+		async function storedMarks(apiContext, userToken) {
+			const user = await (await apiContext.get('user', {headers: {Authorization: `Bearer ${userToken}`}})).json()
+			return {
+				attention: user.settings.frontend_settings.home_attention_bucket_ids,
+				hidden: user.settings.frontend_settings.home_hidden_bucket_ids,
+			}
+		}
+
+		test('Marks a bucket for the home page, switches the mark and keeps it after reload', async ({authenticatedPage: page, apiContext, userToken}) => {
+			await page.goto('/projects/1/4')
+			const bucket = page.locator('.kanban .bucket').first()
+			await expect(bucket.locator('.title')).toContainText(buckets[0].title)
+
+			await openMenu(bucket)
+			await expect(attentionItem(bucket)).toBeVisible()
+			await expect(hiddenItem(bucket)).toBeVisible()
+			await page.keyboard.press('Escape')
+
+			await toggle(page, bucket, attentionItem)
+			await openMenu(bucket)
+			await expect(attentionItem(bucket).locator('.icon')).toHaveClass(/has-text-primary/)
+			await expect(hiddenItem(bucket).locator('.icon')).not.toHaveClass(/has-text-danger/)
+			expect(await storedMarks(apiContext, userToken)).toEqual({attention: [buckets[0].id], hidden: []})
+			await page.keyboard.press('Escape')
+
+			await toggle(page, bucket, hiddenItem)
+			await openMenu(bucket)
+			await expect(hiddenItem(bucket).locator('.icon')).toHaveClass(/has-text-danger/)
+			await expect(attentionItem(bucket).locator('.icon')).not.toHaveClass(/has-text-primary/)
+			expect(await storedMarks(apiContext, userToken)).toEqual({attention: [], hidden: [buckets[0].id]})
+
+			await page.reload()
+			await openMenu(page.locator('.kanban .bucket').first())
+			await expect(hiddenItem(page.locator('.kanban .bucket').first()).locator('.icon')).toHaveClass(/has-text-danger/)
+		})
+	})
 })

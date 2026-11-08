@@ -39,9 +39,9 @@ test.describe('Sidebar Resize', () => {
 		await page.goto('/')
 		await page.waitForLoadState('networkidle')
 
-		// Wait for showTasks to appear with longer timeout for CI
-		await expect(page.locator('[data-cy="showTasks"]')).toBeAttached({timeout: 30000})
-		await expect(page.locator('[data-cy="showTasks"] .card .task').first()).toBeVisible({timeout: 10000})
+		// Wait for the upcoming deadlines to appear with longer timeout for CI
+		await expect(page.locator('[data-cy="homeTaskSection"]')).toBeAttached({timeout: 30000})
+		await expect(page.locator('[data-cy="homeTaskSection"] .task').first()).toBeVisible({timeout: 10000})
 
 		let taskApiCalls = 0
 		page.on('request', request => {

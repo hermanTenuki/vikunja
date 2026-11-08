@@ -31,7 +31,14 @@
     "welcomeEveningWrap": "Time to wrap up, {username}?",
     "welcomeEveningOneMore": "One more thing, {username}?",
     "welcomeEveningStill": "Still at it, {username}?",
-    "lastViewed": "Last viewed",
+    "dashboard": {
+      "attention": "Needs attention",
+      "boards": "Boards",
+      "favorites": "Favorite tasks",
+      "upcoming": "Upcoming deadlines",
+      "all": "All",
+      "kanban": "Kanban"
+    },
     "addToHomeScreen": "Add this app to your home screen for faster access and improved experience.",
     "goToOverview": "Go to overview",
     "project": {
@@ -173,8 +180,6 @@
         "quickAddDefaultReminders": "Default reminders for quick add",
         "quickAddDefaultRemindersDescription": "These reminders will be added automatically to every task created via quick add magic that has a due date.",
         "quickAddDefaultRemindersHint": "Add one or more reminders relative to the task's due date. Leave empty to disable.",
-        "filterUsedOnOverview": "Saved filter used on the overview page",
-        "showLastViewed": "Show last viewed projects on the overview page",
         "minimumPriority": "Minimum visible task priority",
         "dateDisplay": "Date display format",
         "dateDisplayOptions": {
@@ -618,6 +623,11 @@
       "defaultBucket": "Default bucket",
       "defaultBucketHint": "When creating tasks without specifying a bucket, they will be added to this bucket.",
       "defaultBucketSavedSuccess": "The default bucket has been saved successfully.",
+      "homeAttention": "Show on home",
+      "homeAttentionHint": "Tasks from this column are shown on the home page in the “Needs attention” block.",
+      "homeHidden": "Hide from home",
+      "homeHiddenHint": "Tasks from this column are left out of the home page.",
+      "homeMarkSavedSuccess": "The home page setting for this column has been saved.",
       "deleteLast": "You cannot remove the last bucket.",
       "addTaskPlaceholder": "Enter the new task title…",
       "addTask": "Add a task",
