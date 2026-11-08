@@ -1,0 +1,102 @@
+frontend/tests/e2e/task/overview.spec.ts
+  s_d2eab971e3450e::t_36917867fc581b 154,161-162
+  s_d2eab971e3450e::t_0316f71193c291 158
+  s_d2eab971e3450e::t_819e6422751fa3 3,6-8,13-22,49-78,80-84,88-92,94-95,98-102,106-114,117-120,123-132,136-142,144-150,153,157,159-160,163-165,168-170,174-184,188,203-218,220-222,226,235-236,240
+frontend/src/components/home/HomeAttentionCard.vue
+  s_d2eab971e3450e::t_d17850d7c0c9d4 30,33,61
+  s_d2eab971e3450e::t_aadb1c95c83cf3 119
+  s_d2eab971e3450e::t_1bccde968d45d8 1-29,31-32,34-60,62-118,120-156
+frontend/src/components/home/HomeDashboard.vue
+  s_d2eab971e3450e::t_0287fbc8ab7bbe 1-5,45,49-50,52,58-60,62-65,68-76,78-84,91-113,115-116,118-122,135-137,142-144,147-151,158,161-162,164-167
+  s_d2eab971e3450e::t_f14d0cc8d7f2ac 6-13,66-67,77,131-133,145-146
+  s_d2eab971e3450e::t_04ad6ee9a5bfa2 14-44,46-48,51,53-57
+  s_d2eab971e3450e::t_c99010cf547b3a 153-156,159-160
+  s_d2eab971e3450e::t_3e731273575d25 61,85-90,114,117,123-130,134,138-141
+  s_d2eab971e3450e::t_aadb1c95c83cf3 152,157,163
+frontend/tests/e2e/user/openid-login.spec.ts
+  s_d2eab971e3450e::t_36917867fc581b 21
+frontend/src/composables/useHomeTasks.ts
+  s_d2eab971e3450e::t_7c92ee9de73655 4,28,73-77
+  s_d2eab971e3450e::t_222966d89f54a2 1-3,5-25,29-50,52-72,78-81
+  s_d2eab971e3450e::t_a320c4a6595fdf 26-27,51
+frontend/src/components/home/HomeTaskSection.vue
+  s_d2eab971e3450e::t_1bccde968d45d8 1-93,95-112
+  s_d2eab971e3450e::t_aadb1c95c83cf3 94
+frontend/src/components/home/HomeAttentionCard.test.ts
+  s_d2eab971e3450e::t_d17850d7c0c9d4 2-16,19-38,43-103
+  s_d2eab971e3450e::t_7363657af28d50 1,17-18,39-42
+frontend/src/i18n/lang/ru-RU.json
+  s_d2eab971e3450e::t_9a44a3a901bbfb 507
+  s_d2eab971e3450e::t_aadb1c95c83cf3 40
+  s_d2eab971e3450e::t_eeb6f968d21b3b 34-39,41
+  s_d2eab971e3450e::t_bb63a480a42f8c 506,508-509
+  s_d2eab971e3450e::t_3ab66eceb7f57a 510
+frontend/src/composables/useHomeBoards.ts
+  s_d2eab971e3450e::t_222966d89f54a2 1-89,91-97,101-165
+  s_d2eab971e3450e::t_7c92ee9de73655 90,98-100
+frontend/src/components/home/HomeBoardTile.vue
+  s_d2eab971e3450e::t_aadb1c95c83cf3 19,22,26,28,39,62,64,97-98,148-170
+  s_d2eab971e3450e::t_1bccde968d45d8 1-5,7-18,20-21,23-25,27,29-38,40-61,63,65-96,99-147,171-172
+  s_d2eab971e3450e::t_5308432e28dd9b 6
+frontend/src/components/home/HomeBoardTile.test.ts
+  s_d2eab971e3450e::t_e6149f801d4762 69-70
+  s_d2eab971e3450e::t_54702a3ba84331 1-28,30-37,39-65,68,72-73
+  s_d2eab971e3450e::t_36917867fc581b 29,38,66-67,71
+frontend/src/views/Home.vue
+  s_d2eab971e3450e::t_c99010cf547b3a 3-6,26,29-37,39-43,55,121-137
+  s_d2eab971e3450e::t_5288fe42597ef3 138
+frontend/tests/e2e/misc/sidebar-resize.spec.ts
+  s_d2eab971e3450e::t_36917867fc581b 42-44
+frontend/src/composables/useHomeBucketMarks.ts
+  s_d2eab971e3450e::t_3ab66eceb7f57a 9-10,22,62
+  s_d2eab971e3450e::t_bb63a480a42f8c 1-8,11-21,23-61,63-76
+frontend/src/i18n/lang/en.json
+  s_d2eab971e3450e::t_aadb1c95c83cf3 40
+  s_d2eab971e3450e::t_bb63a480a42f8c 626,628-629
+  s_d2eab971e3450e::t_9a44a3a901bbfb 627
+  s_d2eab971e3450e::t_3ab66eceb7f57a 630
+  s_d2eab971e3450e::t_d3ef448fe7704e 34-39,41
+frontend/src/components/project/views/ProjectKanban.vue
+  s_d2eab971e3450e::t_9a44a3a901bbfb 145,154
+  s_d2eab971e3450e::t_bb63a480a42f8c 144,146-153,155-161,348,397
+frontend/src/helpers/bucketAgeLevel.test.ts
+  s_d2eab971e3450e::t_cefc7866b86b13 1-30
+frontend/src/constants/home.ts
+  s_d2eab971e3450e::t_222966d89f54a2 1-5
+frontend/src/helpers/bucketAgeLevel.ts
+  s_d2eab971e3450e::t_222966d89f54a2 2-11,13-16
+  s_d2eab971e3450e::t_7c92ee9de73655 1,12
+frontend/src/composables/useHomeTasks.test.ts
+  s_d2eab971e3450e::t_cefc7866b86b13 1-111,128-150
+  s_d2eab971e3450e::t_ab55bd1ceaa9da 112-127
+frontend/tests/e2e/project/project.spec.ts
+  s_d2eab971e3450e::t_c233f51371d9e3 76
+frontend/src/composables/useHomeBucketMarks.test.ts
+  s_d2eab971e3450e::t_c9cd21ab25fa86 143
+  s_d2eab971e3450e::t_b1bb9f1f2295f8 1-142,144-155
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_d2eab971e3450e::t_a20cc8a05addde 707-708,711-758
+  s_d2eab971e3450e::t_e4d3e7d302e852 709-710
+frontend/src/composables/useHomeBoards.test.ts
+  s_d2eab971e3450e::t_cefc7866b86b13 1-150,163-259
+  s_d2eab971e3450e::t_ab55bd1ceaa9da 151-162
+frontend/src/helpers/userSettings.ts
+  s_d2eab971e3450e::t_bb63a480a42f8c 93-94
+  s_d2eab971e3450e::t_3ab66eceb7f57a 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "000440d8fd4c4b315e4abb852cf47695e0d4c4d3",
+  "prompts": {},
+  "sessions": {
+    "s_d2eab971e3450e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "740adcb9-709e-4d15-bb0e-bed8f579819e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
