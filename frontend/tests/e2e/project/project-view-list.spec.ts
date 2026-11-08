@@ -30,6 +30,12 @@ test.describe('Project View List', () => {
 		await page.goto('/projects/1/1')
 		await page.locator('.task-add textarea').fill(newTaskTitle)
 		await page.locator('.task-add textarea').press('Enter')
+
+		// A single new task opens as a page, the way clicking it in the list does
+		await expect(page).toHaveURL(/\/tasks\/\d+$/)
+		await expect(page.locator('.task-view .heading')).toContainText(newTaskTitle)
+
+		await page.goBack()
 		await expect(page.locator('.tasks')).toContainText(newTaskTitle)
 	})
 
@@ -47,6 +53,8 @@ test.describe('Project View List', () => {
 
 		await expect(page.locator('.tasks')).toContainText(titles[3])
 		await expect(page.locator('.tasks .task .tasktext')).toContainText(titles)
+		// Several new tasks stay in the list instead of opening one of them
+		await expect(page).toHaveURL(/\/projects\/1\/1$/)
 
 		// The order must survive a reload, not only hold in memory
 		await page.reload()

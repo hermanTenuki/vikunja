@@ -721,6 +721,7 @@ import {useConfigStore} from '@/stores/config'
 
 import {useTitle} from '@/composables/useTitle'
 import {useTaskDetailShortcuts} from '@/composables/useTaskDetailShortcuts'
+import {useOpenCreatedTask} from '@/composables/useOpenCreatedTask'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
 
 import {error, success} from '@/message'
@@ -748,6 +749,7 @@ const deleteTaskMutation = useDeleteTaskMutation()
 const restoreTaskMutation = useRestoreTaskMutation()
 const favoriteTask = useFavoriteTaskMutation()
 const duplicateTask = useDuplicateTaskMutation()
+const {beginTaskCreation} = useOpenCreatedTask()
 const markTaskRead = useMarkTaskReadMutation()
 const subscriptionMutation = useSetTaskSubscriptionMutation()
 const taskMutating = computed(() => [
@@ -1276,13 +1278,11 @@ async function toggleFavorite() {
 }
 
 async function duplicateCurrentTask() {
+	const openCreatedTask = beginTaskCreation()
 	const duplicatedTask = await duplicateTask.mutateAsync(task.value.id!)
 	if (duplicatedTask) {
 		success({message: t('task.detail.duplicateSuccess')})
-		router.push({
-			name: 'task.detail',
-			params: {id: duplicatedTask.id},
-		})
+		await openCreatedTask(duplicatedTask.id)
 	}
 }
 

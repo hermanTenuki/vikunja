@@ -78,6 +78,7 @@ import {error} from '@/message'
 import {useAuthStore} from '@/stores/auth'
 import {useConfigStore} from '@/stores/config'
 import {reportSkippedLabels, useQuickAddTask} from '@/composables/useQuickAddTask'
+import {useOpenCreatedTask} from '@/composables/useOpenCreatedTask'
 
 import {useAutoHeightTextarea} from '@/composables/useAutoHeightTextarea'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
@@ -101,6 +102,7 @@ const configStore = useConfigStore()
 const {createNewTasksBulk, findProjectId, ensureLabelsExist, isLoading: loading} = useQuickAddTask()
 const showLoading = useDelayedLoading(loading)
 const createRelationMutation = useCreateTaskRelationMutation()
+const {beginTaskCreation} = useOpenCreatedTask()
 const router = useRouter()
 
 // enable only if we don't have a modal
@@ -134,6 +136,9 @@ async function addTask() {
 	}
 
 	const context = captureClientRequestContext()
+	const openCreatedTask = beginTaskCreation()
+	// Only a single created task is opened; several stay in the list they were added to.
+	let taskToOpen: ITask | null = null
 	const taskTitleBackup = newTaskTitle.value
 	// Keyed by the title the task had before quick add magic parsed it. A Map,
 	// because a user-entered `__proto__` would corrupt plain-object lookups.
@@ -233,6 +238,8 @@ async function addTask() {
 		if (bulk.error !== null) {
 			newTaskTitle.value = taskTitleBackup
 			error(bulk.error)
+		} else if (allCreated.length === 1) {
+			taskToOpen = allCreated[0]
 		}
 	} catch (e) {
 		newTaskTitle.value = taskTitleBackup
@@ -241,6 +248,11 @@ async function addTask() {
 			return
 		}
 		throw e
+	}
+
+	// Outside the try: the task exists, a failed navigation must not restore the input.
+	if (taskToOpen !== null) {
+		await openCreatedTask(taskToOpen.id)
 	}
 }
 

@@ -81,6 +81,7 @@ import FormField from '@/components/input/FormField.vue'
 
 import GanttChart from '@/components/gantt/GanttChart.vue'
 import {useGanttFilters} from '../../../views/project/helpers/useGanttFilters'
+import {useOpenCreatedTask} from '@/composables/useOpenCreatedTask'
 import {PERMISSIONS} from '@/constants/permissions'
 
 import type {DateISO} from '@/types/DateISO'
@@ -110,6 +111,7 @@ const {
 	addTask,
 	updateTask,
 } = useGanttFilters(route, projectId, viewId)
+const {beginTaskCreation} = useOpenCreatedTask()
 
 const DEFAULT_DATE_RANGE_DAYS = 7
 
@@ -122,12 +124,15 @@ const defaultTaskEndDate: DateISO = new Date(new Date(
 ).setHours(23, 59, 0, 0)).toISOString()
 
 async function addGanttTask(title: ITask['title']) {
-	return await addTask({
+	const openCreatedTask = beginTaskCreation()
+	const task = await addTask({
 		title,
 		project_id: filters.value.projectId,
 		start_date: defaultTaskStartDate,
 		end_date: defaultTaskEndDate,
 	})
+	await openCreatedTask(task.id)
+	return task
 }
 
 const dateRange = computed({

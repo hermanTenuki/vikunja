@@ -135,6 +135,9 @@ test.describe('Project View Kanban', () => {
 		await page.locator('.kanban .bucket').filter({hasText: buckets[0].title}).locator('.bucket-footer .field .control input.input').fill('New Task')
 		await page.locator('.kanban .bucket').filter({hasText: buckets[0].title}).locator('.bucket-footer .field .control input.input').press('Enter')
 
+		// The new card opens as a modal over the board, the way clicking it does
+		await expect(page).toHaveURL(/\/tasks\/\d+$/)
+		await expect(page.locator('.modal-content .task-view .heading')).toContainText('New Task')
 		await expect(page.locator('.kanban .bucket').first()).toContainText('New Task')
 	})
 

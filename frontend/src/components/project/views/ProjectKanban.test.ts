@@ -75,8 +75,18 @@ vi.mock('@vueuse/router', () => ({
 	useRouteQuery: () => ({value: undefined}),
 }))
 
+const router = vi.hoisted(() => ({
+	push: vi.fn(),
+	currentRoute: {
+		value: {
+			name: 'project.view',
+			fullPath: '/projects/1/10',
+			params: {projectId: '1', viewId: '10'},
+		},
+	},
+}))
 vi.mock('vue-router', () => ({
-	useRouter: () => ({push: vi.fn(), currentRoute: {value: {fullPath: '/', params: {}}}}),
+	useRouter: () => router,
 }))
 
 vi.mock('vue-i18n', async importOriginal => ({
@@ -156,6 +166,7 @@ describe('ProjectKanban', () => {
 		loadBucketPage.mockClear()
 		loadBucketPage.mockResolvedValue({data: {items: []}})
 		sdk.tasksCreate.mockReset()
+		router.push.mockClear()
 		drop.result = {moved: false, targetProjectId: null}
 	})
 
@@ -287,6 +298,23 @@ describe('ProjectKanban', () => {
 		await flushPromises()
 
 		expect(wrapper.find('.bucket-footer input').exists()).toBe(false)
+	})
+
+	it('opens the created task as a modal over the board', async () => {
+		sdk.tasksCreate.mockResolvedValue({data: {id: 12, title: 'New task', project_id: 1, bucket_id: 1}})
+		const wrapper = await mountKanban({BucketDraggable: DRAGGABLE_STUB, TaskDraggable: DRAGGABLE_STUB})
+
+		;(wrapper.vm as unknown as {toggleShowNewTaskInput: (id: number) => void}).toggleShowNewTaskInput(1)
+		await nextTick()
+		await wrapper.find('.bucket-footer input').setValue('New task')
+		await wrapper.find('.bucket-footer input').trigger('keyup.enter')
+		await flushPromises()
+
+		expect(router.push).toHaveBeenCalledWith({
+			name: 'task.detail',
+			params: {id: 12},
+			state: {backdropView: '/projects/1/10'},
+		})
 	})
 
 	it('does nothing when the dropped bucket is gone', async () => {

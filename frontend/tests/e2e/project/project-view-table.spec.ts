@@ -133,6 +133,10 @@ test.describe('Project View Table', () => {
 		await page.locator('.project-table .task-add textarea').fill('Task from the table')
 		await page.locator('.project-table .task-add textarea').press('Enter')
 
+		await expect(page).toHaveURL(/\/tasks\/\d+$/)
+		await expect(page.locator('.task-view .heading')).toContainText('Task from the table')
+
+		await page.goBack()
 		await expect(page.locator('.project-table tbody tr')).toHaveCount(2)
 		await expect(page.locator('.project-table table.table')).toContainText('Task from the table')
 	})

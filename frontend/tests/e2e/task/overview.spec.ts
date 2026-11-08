@@ -156,6 +156,10 @@ test.describe('Home Page Task Overview', () => {
 		await addTaskInput.press('Enter')
 		await createTaskPromise
 
+		// The new task opens as a page; back on the overview it is listed
+		await expect(page).toHaveURL(/\/tasks\/\d+$/)
+		await page.goBack()
+
 		// Wait for the task to appear in the list (no due date tasks appear at the bottom)
 		await expect(page.locator('[data-cy="showTasks"] .card .task').last()).toContainText(newTaskTitle, {timeout: 10000})
 	})

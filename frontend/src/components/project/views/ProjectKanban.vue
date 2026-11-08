@@ -323,6 +323,7 @@ import type {SortableEvent} from 'sortablejs'
 import {PERMISSIONS as Permissions} from '@/constants/permissions'
 
 import {useQuickAddTask} from '@/composables/useQuickAddTask'
+import {useOpenCreatedTask} from '@/composables/useOpenCreatedTask'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
 import {useTaskDragState} from '@/composables/useTaskDragState'
 import {useAuthStore} from '@/stores/auth'
@@ -378,6 +379,7 @@ const updateDefaultBucket = useUpdateProjectViewMutation(t('project.kanban.defau
 const updateDoneBucket = useUpdateProjectViewMutation(t('project.kanban.doneBucketSavedSuccess'), isCurrentProject)
 
 const {createNewTask, isLoading: quickAddLoading} = useQuickAddTask()
+const {beginTaskCreation} = useOpenCreatedTask()
 const {setDraggedTask} = useTaskDragState()
 const authStore = useAuthStore()
 
@@ -636,7 +638,8 @@ async function addTaskToBucket(bucketId: number) {
 	}
 	newTaskError.value[bucketId] = false
 
-	await createNewTask({
+	const openCreatedTask = beginTaskCreation()
+	const task = await createNewTask({
 		title: newTaskText.value,
 		bucket_id: bucketId,
 		project_id: projectIdWithFallback.value,
@@ -648,6 +651,8 @@ async function addTaskToBucket(bucketId: number) {
 	if (bucket && isBucketFull(bucket)) {
 		toggleShowNewTaskInput(bucketId)
 	}
+
+	await openCreatedTask(task.id)
 }
 
 function scrollTaskContainerToTop(bucketId: number) {
