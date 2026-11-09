@@ -1,0 +1,43 @@
+frontend/src/components/tasks/partials/DueDateBadge.vue
+  s_dc25ccf657dcda::t_be66cdbb892431 20,33
+  s_dc25ccf657dcda::t_03ec895a08306b 7-13
+  s_dc25ccf657dcda::t_ab90f182d386aa 1-6,14-19,21-32,34-88
+frontend/src/helpers/taskDueLevel.ts
+  s_dc25ccf657dcda::t_ab90f182d386aa 1-28
+frontend/src/components/home/HomeAttentionCard.vue
+  s_dc25ccf657dcda::t_2c2fad905fb1a8 42-43,45-47,59,69,71,92
+frontend/src/components/tasks/partials/SingleTaskInProject.vue
+  s_dc25ccf657dcda::t_2c2fad905fb1a8 95,259,364
+frontend/src/helpers/taskDueLevel.test.ts
+  s_dc25ccf657dcda::t_1f9bb4ffe40b7e 1-42
+frontend/src/constants/home.ts
+  s_dc25ccf657dcda::t_2c2fad905fb1a8 4
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_dc25ccf657dcda::t_1f9bb4ffe40b7e 745-772,796
+frontend/src/components/tasks/partials/SingleTaskInProject.test.ts
+  s_dc25ccf657dcda::t_1f9bb4ffe40b7e 161-172
+frontend/src/components/misc/Icon.ts
+  s_dc25ccf657dcda::t_2c2fad905fb1a8 49,171
+frontend/src/components/home/HomeAttentionCard.test.ts
+  s_dc25ccf657dcda::t_1f9bb4ffe40b7e 136-148
+frontend/src/components/tasks/partials/KanbanCard.test.ts
+  s_dc25ccf657dcda::t_1f9bb4ffe40b7e 30,340-359
+frontend/src/components/tasks/partials/KanbanCard.vue
+  s_dc25ccf657dcda::t_2c2fad905fb1a8 15,47-48,50-52,143,158,161,202,422-426,431-434,459,479
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bad0a430a96a8ca794209f6bbfa9e080ee5bf5ef",
+  "prompts": {},
+  "sessions": {
+    "s_dc25ccf657dcda": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a3425a50-69f1-433f-b859-2c82de28035b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
