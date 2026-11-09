@@ -704,6 +704,44 @@ test.describe('Project View Kanban', () => {
 		await expect(limitSpan).toContainText('Limit reached')
 	})
 
+	test('Shows a sleep badge instead of the due date until the start date has come', async ({authenticatedPage: page}) => {
+		const day = 86_400_000
+		const sleeping = {
+			id: 1,
+			title: 'Sleeping card',
+			start_date: new Date(Date.now() + 5 * day),
+			due_date: new Date(Date.now() + 10 * day),
+		}
+		const started = {
+			id: 2,
+			title: 'Started card',
+			start_date: new Date(Date.now() - 2 * day),
+			due_date: new Date(Date.now() + 3 * day),
+		}
+		for (const [i, card] of [sleeping, started].entries()) {
+			await TaskFactory.create(1, {
+				...card,
+				project_id: 1,
+				start_date: card.start_date.toISOString(),
+				due_date: card.due_date.toISOString(),
+			}, i === 0)
+			await TaskBucketFactory.create(1, {
+				task_id: card.id,
+				bucket_id: buckets[0].id,
+				project_view_id: buckets[0].project_view_id,
+			}, i === 0)
+		}
+		await page.goto('/projects/1/4')
+
+		const sleepingCard = page.locator('.kanban .kanban-card').filter({hasText: sleeping.title})
+		await expect(sleepingCard.locator('[data-cy="sleepBadge"]')).toContainText('in 5 days')
+		await expect(sleepingCard.locator('.due-date')).toHaveCount(0)
+
+		const startedCard = page.locator('.kanban .kanban-card').filter({hasText: started.title})
+		await expect(startedCard.locator('.due-date')).toBeVisible()
+		await expect(startedCard.locator('[data-cy="sleepBadge"]')).toHaveCount(0)
+	})
+
 	test('Shows the time in the bucket and resets it when the card moves to another bucket', async ({authenticatedPage: page, apiContext, userToken}) => {
 		const headers = {Authorization: `Bearer ${userToken}`}
 		const [task] = await TaskFactory.create(1, {project_id: 1})

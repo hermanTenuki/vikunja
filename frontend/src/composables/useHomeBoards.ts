@@ -6,7 +6,9 @@ import {kanbanQuery, type BucketResponse} from '@/client/queries/kanban'
 import {sortProjectViewsByPosition} from '@/client/queries/projectViews'
 import type {ProjectResponse} from '@/client/queries/projects'
 import type {TaskResponse} from '@/client/queries/tasks'
+import {useGlobalNow} from '@/composables/useGlobalNow'
 import {useProjects} from '@/composables/useProjects'
+import {taskSleepDays} from '@/helpers/taskSleep'
 import {useAuthStore} from '@/stores/auth'
 
 export type KanbanView = ProjectView & {id: number}
@@ -83,6 +85,7 @@ export function homeBoardCandidates(
 export function buildAttentionCards(
 	boards: readonly HomeBoard[],
 	attentionIds: readonly number[],
+	now: Date,
 ): AttentionCards {
 	const cards: AttentionCard[] = []
 	let total = 0
@@ -101,7 +104,11 @@ export function buildAttentionCards(
 		}
 	}
 
-	return {cards, total}
+	// Sleeping cards go last; both groups keep their order.
+	const isAwake = (card: AttentionCard) => taskSleepDays(card.task, now) === 0
+	const sorted = [...cards.filter(isAwake), ...cards.filter(card => !isAwake(card))]
+
+	return {cards: sorted, total}
 }
 
 export function buildBoardTiles(
@@ -136,6 +143,7 @@ export function buildBoardTiles(
 export function useHomeBoards() {
 	const authStore = useAuthStore()
 	const projectStore = useProjects()
+	const {now} = useGlobalNow()
 
 	const attentionIds = computed(() => authStore.settings?.frontend_settings?.home_attention_bucket_ids ?? [])
 	const hiddenIds = computed(() => authStore.settings?.frontend_settings?.home_hidden_bucket_ids ?? [])
@@ -158,7 +166,7 @@ export function useHomeBoards() {
 		return data ? [{project, view: kanbanView, buckets: data.buckets}] : []
 	}))
 
-	const attention = computed(() => buildAttentionCards(boards.value, attentionIds.value))
+	const attention = computed(() => buildAttentionCards(boards.value, attentionIds.value, now.value))
 	const tiles = computed(() => buildBoardTiles(boards.value, hiddenIds.value, attentionIds.value))
 
 	return {attention, tiles}

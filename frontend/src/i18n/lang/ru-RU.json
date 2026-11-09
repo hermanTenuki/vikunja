@@ -1089,6 +1089,10 @@
 		"mention": {
 			"noUsersFound": "Пользователи не найдены"
 		},
+		"sleep": {
+			"from": "с {date}",
+			"tooltip": "Дата начала: {date}"
+		},
 		"deferDueDate": {
 			"title": "Отложить срок",
 			"1day": "1 день",

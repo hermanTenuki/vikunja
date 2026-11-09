@@ -1157,16 +1157,6 @@ async function saveTask(
 
 	currentTask.hex_color = taskColor.value
 
-	// If no end date is being set, but a start date and due date,
-	// use the due date as the end date
-	if (
-		!parseDateOrNull(currentTask.end_date) &&
-		Boolean(parseDateOrNull(currentTask.start_date)) &&
-		Boolean(parseDateOrNull(currentTask.due_date))
-	) {
-		currentTask.end_date = currentTask.due_date
-	}
-
 	seedTask(mergeTask(task.value, await updateTask.mutateAsync({...currentTask, id: currentTask.id!})))
 	setActiveFields()
 

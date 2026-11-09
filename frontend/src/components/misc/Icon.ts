@@ -100,6 +100,7 @@ import {
 	faCheckSquare,
 	faClock,
 	faComments,
+	faMoon,
 	faSave,
 	faSquareCheck,
 	faStar,
@@ -173,6 +174,7 @@ library.add(faList)
 library.add(faListOl)
 library.add(faLock)
 library.add(faMinus)
+library.add(faMoon)
 library.add(faPaperclip)
 library.add(faPaste)
 library.add(faPen)

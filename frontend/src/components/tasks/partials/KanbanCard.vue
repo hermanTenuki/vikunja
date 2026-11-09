@@ -4,6 +4,7 @@
 		class="task loader-container draggable"
 		:class="{
 			'is-loading': showLoading,
+			'is-asleep': sleepDays > 0,
 			'draggable': !loadingInternal,
 			'has-light-text': !colorIsDark(color),
 			'has-custom-background-color': color ?? undefined,
@@ -38,8 +39,13 @@
 						{{ task.position }}
 					</span>
 				</span>
+				<SleepBadge
+					v-if="sleepDays > 0"
+					:start-date="task.start_date!"
+					:days="sleepDays"
+				/>
 				<span
-					v-if="new Date(task.due_date ?? 0).getTime() > 0"
+					v-else-if="new Date(task.due_date ?? 0).getTime() > 0"
 					v-tooltip="formatDateLong(task.due_date)"
 					class="due-date"
 				>
@@ -145,6 +151,7 @@ import {useGlobalNow} from '@/composables/useGlobalNow'
 
 import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
 import OverdueIndicator from '@/components/tasks/partials/OverdueIndicator.vue'
+import SleepBadge from '@/components/tasks/partials/SleepBadge.vue'
 import ProgressBar from '@/components/misc/ProgressBar.vue'
 import Done from '@/components/misc/Done.vue'
 import Labels from '@/components/tasks/partials/Labels.vue'
@@ -160,6 +167,7 @@ import {ApiError} from '@/client/problem'
 
 import {formatDateLong, formatDisplayDate, formatISO} from '@/helpers/time/formatDate'
 import {formatShortDuration} from '@/helpers/time/formatShortDuration'
+import {taskSleepDays} from '@/helpers/taskSleep'
 import {colorIsDark} from '@/helpers/color/colorIsDark'
 import {useUpdateTaskMutation} from '@/client/queries/taskMutations'
 import AssigneeList from '@/components/tasks/partials/AssigneeList.vue'
@@ -206,6 +214,8 @@ const isOverdue = computed(() => (
 	new Date(props.task.due_date ?? 0).getTime() > 0 &&
 	new Date(props.task.due_date ?? 0).getTime() <= now.value.getTime()
 ))
+
+const sleepDays = computed(() => taskSleepDays(props.task, now.value))
 
 const {t, locale} = useI18n({useScope: 'global'})
 
@@ -445,6 +455,11 @@ $task-background: var(--white);
 	}
 
 	&.is-moving {
+		opacity: .5;
+	}
+
+	// Not inside the drag ghost or the dragged clone: ProjectKanban styles those and they must look like any card.
+	:not(.ghost, .task-dragging) > &.is-asleep:not(:hover, :focus-within) {
 		opacity: .5;
 	}
 

@@ -26,6 +26,7 @@ const attachments = vi.hoisted(() => ({
 vi.mock('@/helpers/attachments', () => attachments)
 
 import KanbanCard from './KanbanCard.vue'
+import SleepBadge from './SleepBadge.vue'
 
 const i18n = createI18n({legacy: false, locale: 'en', messages: {en}})
 
@@ -78,6 +79,11 @@ const taskWithCover = normalizeTask({
 
 const errorHandler = vi.fn()
 
+// useGlobalNow runs on the real clock in this file, so dates are relative to it.
+function daysFromNow(days: number) {
+	return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+}
+
 function mountCard(task: TaskResponse) {
 	const router = createRouter({
 		history: createMemoryHistory(),
@@ -93,6 +99,7 @@ function mountCard(task: TaskResponse) {
 				[VueQueryPlugin, {queryClient: new QueryClient({defaultOptions: {queries: {retry: false}}})}],
 			],
 			mocks: {$t: (key: string) => key},
+			directives: {tooltip: {}},
 			config: {errorHandler},
 		},
 	})
@@ -307,5 +314,26 @@ describe('KanbanCard', () => {
 
 		expect(observer.observing).toBe(false)
 		expect(attachments.fetchAttachmentUrl).not.toHaveBeenCalled()
+	})
+
+	it('shows a sleep badge instead of the due date for a task that starts later', () => {
+		const wrapper = mountCard(normalizeTask({
+			id: 9, project_id: 1, title: 'Later', start_date: daysFromNow(5), due_date: daysFromNow(10),
+		}))
+
+		expect(wrapper.findComponent(SleepBadge).exists()).toBe(true)
+		expect(wrapper.find('.due-date').exists()).toBe(false)
+		expect(wrapper.classes('is-asleep')).toBe(true)
+	})
+
+	it.each([
+		['has already started', daysFromNow(-2), daysFromNow(3)],
+		['is due before its start day', daysFromNow(5), daysFromNow(2)],
+	])('shows the due date and no badge for a task that %s', (_label, start_date, due_date) => {
+		const wrapper = mountCard(normalizeTask({id: 10, project_id: 1, title: 'Awake', start_date, due_date}))
+
+		expect(wrapper.findComponent(SleepBadge).exists()).toBe(false)
+		expect(wrapper.find('.due-date').exists()).toBe(true)
+		expect(wrapper.classes('is-asleep')).toBe(false)
 	})
 })

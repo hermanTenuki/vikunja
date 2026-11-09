@@ -84,8 +84,15 @@
 					:inline="true"
 				/>
 
+				<SleepBadge
+					v-if="sleepDays > 0"
+					:start-date="task.start_date!"
+					:days="sleepDays"
+					class="sleep-badge-inline"
+				/>
+
 				<Popup
-					v-if="task.due_date && +new Date(task.due_date) > 0"
+					v-else-if="task.due_date && +new Date(task.due_date) > 0"
 					placement="bottom-start"
 					:anchor="dueDateTriggerEl"
 					sheet-on-mobile
@@ -227,6 +234,7 @@ import Labels from '@/components/tasks/partials/Labels.vue'
 import TaskGlanceTooltip from '@/components/tasks/partials/TaskGlanceTooltip.vue'
 import DeferTask from '@/components/tasks/partials/DeferTask.vue'
 import OverdueIndicator from '@/components/tasks/partials/OverdueIndicator.vue'
+import SleepBadge from '@/components/tasks/partials/SleepBadge.vue'
 import ChecklistSummary from '@/components/tasks/partials/ChecklistSummary.vue'
 import CommentCount from '@/components/tasks/partials/CommentCount.vue'
 
@@ -247,6 +255,7 @@ import AssigneeList from '@/components/tasks/partials/AssigneeList.vue'
 import {useIntervalFn} from '@vueuse/core'
 import {playPopSound} from '@/helpers/playPop'
 import {isEditorContentEmpty} from '@/helpers/editorContentEmpty'
+import {taskSleepDays} from '@/helpers/taskSleep'
 import {TASK_REPEAT_MODES} from '@/types/IRepeatMode'
 import {useGlobalNow} from '@/composables/useGlobalNow'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
@@ -349,6 +358,8 @@ const isOverdue = computed(() => (
 	new Date(task.value.due_date ?? 0).getTime() > 0 &&
 	new Date(task.value.due_date ?? 0).getTime() <= now.value.getTime()
 ))
+
+const sleepDays = computed(() => taskSleepDays(task.value, now.value))
 
 let oldTask: ITask
 
@@ -493,6 +504,10 @@ defineExpose({
 				border-radius: 3px;
 			}
 		}
+	}
+
+	.sleep-badge-inline {
+		margin-inline-start: 5px;
 	}
 
 	&[data-is-overdue] .dueDate {

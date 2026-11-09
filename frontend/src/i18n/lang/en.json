@@ -1277,6 +1277,10 @@
     "mention": {
       "noUsersFound": "No users found"
     },
+    "sleep": {
+      "from": "from {date}",
+      "tooltip": "Start date: {date}"
+    },
     "deferDueDate": {
       "title": "Defer due date",
       "1day": "1 day",

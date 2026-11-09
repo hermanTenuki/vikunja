@@ -3,6 +3,7 @@
 		v-cy="'homeAttentionCard'"
 		:to="{name: 'task.detail', params: {id: card.task.id}}"
 		class="home-attention-card"
+		:class="{'is-asleep': sleepDays > 0}"
 		:data-task-id="card.task.id"
 	>
 		<span class="home-attention-card__meta">
@@ -13,8 +14,14 @@
 				{{ card.bucket.title }}
 			</span>
 			<span class="home-attention-card__project">{{ card.project.title }}</span>
+			<SleepBadge
+				v-if="sleepDays > 0"
+				class="home-attention-card__sleep"
+				:start-date="card.task.start_date!"
+				:days="sleepDays"
+			/>
 			<span
-				v-if="timeInBucket"
+				v-else-if="timeInBucket"
 				v-tooltip="timeInBucketTooltip"
 				class="home-attention-card__age"
 				:class="`is-${ageLevel}`"
@@ -33,7 +40,7 @@
 				:show-all="true"
 			/>
 			<span
-				v-if="hasDueDate"
+				v-if="hasDueDate && sleepDays === 0"
 				v-tooltip="formatDateLong(card.task.due_date)"
 				class="home-attention-card__due"
 				:class="{'is-overdue': isOverdue}"
@@ -52,6 +59,7 @@ import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 
 import Icon from '@/components/misc/Icon'
+import SleepBadge from '@/components/tasks/partials/SleepBadge.vue'
 import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
 import ChecklistSummary from '@/components/tasks/partials/ChecklistSummary.vue'
 import CommentCount from '@/components/tasks/partials/CommentCount.vue'
@@ -60,6 +68,7 @@ import {useGlobalNow} from '@/composables/useGlobalNow'
 import type {AttentionCard} from '@/composables/useHomeBoards'
 import {PRIORITIES} from '@/constants/priorities'
 import {bucketAgeLevel} from '@/helpers/bucketAgeLevel'
+import {taskSleepDays} from '@/helpers/taskSleep'
 import {formatDateLong, formatDisplayDate} from '@/helpers/time/formatDate'
 import {formatShortDuration} from '@/helpers/time/formatShortDuration'
 
@@ -78,6 +87,8 @@ const timeInBucketTooltip = computed(() => enteredAt.value
 	? t('project.kanban.timeInBucket', {date: formatDateLong(enteredAt.value)})
 	: '')
 const ageLevel = computed(() => bucketAgeLevel(enteredAt.value, now.value))
+
+const sleepDays = computed(() => taskSleepDays(props.card.task, now.value))
 
 const hasDueDate = computed(() => new Date(props.card.task.due_date ?? 0).getTime() > 0)
 const isOverdue = computed(() => hasDueDate.value
@@ -102,6 +113,14 @@ const isOverdue = computed(() => hasDueDate.value
 	&:hover {
 		border-color: var(--primary);
 	}
+
+	&.is-asleep:not(:hover, :focus-visible) {
+		opacity: .5;
+	}
+}
+
+.home-attention-card__sleep {
+	margin-inline-start: auto;
 }
 
 .home-attention-card__meta,

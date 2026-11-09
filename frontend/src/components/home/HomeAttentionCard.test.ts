@@ -50,6 +50,10 @@ function mountCard(card: AttentionCard) {
 	})
 }
 
+function daysAhead(days: number) {
+	return new Date(NOW.getTime() + days * MILLISECONDS_A_DAY).toISOString()
+}
+
 describe('HomeAttentionCard', () => {
 	beforeAll(() => {
 		vi.useFakeTimers({now: NOW})
@@ -99,5 +103,34 @@ describe('HomeAttentionCard', () => {
 		const wrapper = mountCard(buildCard({priority}))
 
 		expect(wrapper.find('.priority-label').exists()).toBe(shown)
+	})
+
+	it.each([
+		[5, 'in 5 days'],
+		[25, 'from Dec 3'],
+	])('shows a sleep badge instead of age and due date for a task starting in %i days', (days, text) => {
+		const wrapper = mountCard(buildCard({
+			start_date: daysAhead(days),
+			due_date: daysAhead(days + 3),
+			bucket_entered_at: daysAgo(20),
+		}))
+
+		expect(wrapper.find('[data-cy="sleepBadge"]').text()).toBe(text)
+		expect(wrapper.find('[data-cy="homeAttentionAge"]').exists()).toBe(false)
+		expect(wrapper.find('.home-attention-card__due').exists()).toBe(false)
+		expect(wrapper.classes('is-asleep')).toBe(true)
+	})
+
+	it('keeps age and due date and shows no badge for a task that has already started', () => {
+		const wrapper = mountCard(buildCard({
+			start_date: daysAgo(2),
+			due_date: daysAhead(3),
+			bucket_entered_at: daysAgo(20),
+		}))
+
+		expect(wrapper.find('[data-cy="sleepBadge"]').exists()).toBe(false)
+		expect(wrapper.find('[data-cy="homeAttentionAge"]').exists()).toBe(true)
+		expect(wrapper.find('.home-attention-card__due').exists()).toBe(true)
+		expect(wrapper.classes('is-asleep')).toBe(false)
 	})
 })

@@ -49,8 +49,8 @@ function bucket(id: number, overrides: Partial<BucketResponse> = {}): BucketResp
 	return {id, title: `B${id}`, count: 0, limit: 0, position: id, tasks: [], ...overrides} as BucketResponse
 }
 
-function task(id: number, done = false): TaskResponse {
-	return {id, done} as TaskResponse
+function task(id: number, done = false, overrides: Partial<TaskResponse> = {}): TaskResponse {
+	return {id, done, ...overrides} as TaskResponse
 }
 
 function board(p: ProjectResponse, buckets: BucketResponse[], doneBucketId = 0): HomeBoard {
@@ -60,6 +60,9 @@ function board(p: ProjectResponse, buckets: BucketResponse[], doneBucketId = 0):
 		buckets,
 	}
 }
+
+const NOW = new Date('2026-11-08T12:00:00Z')
+const FUTURE_START = '2026-11-18T12:00:00Z'
 
 function ids(list: readonly {project: ProjectResponse}[]) {
 	return list.map(item => item.project.id)
@@ -118,6 +121,7 @@ describe('buildAttentionCards', () => {
 		const result = buildAttentionCards(
 			[board(p, [bucket(5, {count: 2, tasks: [task(1), task(2, true)]}), bucket(6, {count: 1, tasks: [task(3)]})])],
 			[5, 999],
+			NOW,
 		)
 
 		expect(result.cards.map(card => card.task.id)).toEqual([1])
@@ -132,7 +136,7 @@ describe('buildAttentionCards', () => {
 				bucket(6, {position: 10, tasks: [task(3)], count: 1}),
 			]),
 			board(project(2), [bucket(7, {position: 1, tasks: [task(4)], count: 1})]),
-		], [5, 6, 7])
+		], [5, 6, 7], NOW)
 
 		expect(result.cards.map(card => card.task.id)).toEqual([3, 1, 2, 4])
 	})
@@ -141,10 +145,30 @@ describe('buildAttentionCards', () => {
 		const result = buildAttentionCards(
 			[board(project(1), [bucket(5, {count: 40, tasks: [task(1), task(2, true), task(3, true)]})])],
 			[5],
+			NOW,
 		)
 
 		expect(result.total).toBe(38)
 		expect(result.cards).toHaveLength(1)
+	})
+})
+
+describe('buildAttentionCards sleeping tasks', () => {
+	it('puts sleeping tasks last across boards, keeps the order inside both groups and leaves total alone', () => {
+		const result = buildAttentionCards([
+			board(project(1), [bucket(5, {count: 3, tasks: [
+				task(1, false, {start_date: FUTURE_START}),
+				task(2),
+				task(3, false, {start_date: FUTURE_START, due_date: '2026-11-01T12:00:00Z'}),
+			]})]),
+			board(project(2), [bucket(7, {count: 2, tasks: [
+				task(4, false, {start_date: FUTURE_START}),
+				task(5, false, {start_date: '2026-11-01T12:00:00Z'}),
+			]})]),
+		], [5, 7], NOW)
+
+		expect(result.cards.map(card => card.task.id)).toEqual([2, 3, 5, 1, 4])
+		expect(result.total).toBe(5)
 	})
 })
 
@@ -153,6 +177,7 @@ describe('buildAttentionCards done column', () => {
 		const result = buildAttentionCards(
 			[board(project(1), [bucket(5, {count: 40, tasks: [task(1, true), task(2, true)]})], 5)],
 			[5],
+			NOW,
 		)
 
 		expect(result.total).toBe(0)
