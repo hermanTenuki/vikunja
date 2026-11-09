@@ -1,5 +1,6 @@
 export const HOME_STALE_WARNING_DAYS = 14
 export const HOME_STALE_DANGER_DAYS = 30
 export const HOME_UPCOMING_WINDOW_DAYS = 14
+export const DUE_DATE_HORIZON_DAYS = 30
 export const HOME_UPCOMING_LIMIT = 10
 export const HOME_PHONE_TASK_ROWS = 3

@@ -133,4 +133,17 @@ describe('HomeAttentionCard', () => {
 		expect(wrapper.find('.home-attention-card__due').exists()).toBe(true)
 		expect(wrapper.classes('is-asleep')).toBe(false)
 	})
+
+	it.each([
+		['is-horizon', daysAhead(20)],
+		['is-soon', daysAhead(10)],
+		['is-overdue', daysAgo(2)],
+		['is-plain', daysAhead(40)],
+	])('marks the due date with %s', (expected, due_date) => {
+		const wrapper = mountCard(buildCard({due_date}))
+
+		const due = wrapper.get('.home-attention-card__due')
+		expect(due.classes()).toContain(expected)
+		expect(due.find('.overdue-indicator').exists()).toBe(expected === 'is-overdue')
+	})
 })

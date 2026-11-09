@@ -27,6 +27,7 @@ vi.mock('@/helpers/attachments', () => attachments)
 
 import KanbanCard from './KanbanCard.vue'
 import SleepBadge from './SleepBadge.vue'
+import DueDateBadge from './DueDateBadge.vue'
 
 const i18n = createI18n({legacy: false, locale: 'en', messages: {en}})
 
@@ -335,5 +336,25 @@ describe('KanbanCard', () => {
 		expect(wrapper.findComponent(SleepBadge).exists()).toBe(false)
 		expect(wrapper.find('.due-date').exists()).toBe(true)
 		expect(wrapper.classes('is-asleep')).toBe(false)
+	})
+
+	it('shows no due date on a done task', () => {
+		const wrapper = mountCard(normalizeTask({
+			id: 11, project_id: 1, title: 'Finished', done: true, due_date: daysFromNow(-3),
+		}))
+
+		expect(wrapper.findComponent(DueDateBadge).exists()).toBe(false)
+		expect(wrapper.find('.due-date').exists()).toBe(false)
+	})
+
+	it.each([
+		['soon', 10],
+		['overdue', -3],
+	])('rates the due date of an awake task as %s', (level, days) => {
+		const wrapper = mountCard(normalizeTask({
+			id: 12, project_id: 1, title: 'Awake', done: false, due_date: daysFromNow(days),
+		}))
+
+		expect(wrapper.findComponent(DueDateBadge).props('level')).toBe(level)
 	})
 })

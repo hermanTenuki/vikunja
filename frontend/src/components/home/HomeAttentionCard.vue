@@ -39,15 +39,12 @@
 				:done="card.task.done"
 				:show-all="true"
 			/>
-			<span
-				v-if="hasDueDate && sleepDays === 0"
-				v-tooltip="formatDateLong(card.task.due_date)"
+			<DueDateBadge
+				v-if="dueLevel && sleepDays === 0"
 				class="home-attention-card__due"
-				:class="{'is-overdue': isOverdue}"
-			>
-				<Icon :icon="['far', 'calendar-alt']" />
-				{{ formatDisplayDate(card.task.due_date) }}
-			</span>
+				:due-date="card.task.due_date!"
+				:level="dueLevel"
+			/>
 			<ChecklistSummary :task="card.task" />
 			<CommentCount :task="card.task" />
 		</span>
@@ -59,6 +56,7 @@ import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 
 import Icon from '@/components/misc/Icon'
+import DueDateBadge from '@/components/tasks/partials/DueDateBadge.vue'
 import SleepBadge from '@/components/tasks/partials/SleepBadge.vue'
 import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
 import ChecklistSummary from '@/components/tasks/partials/ChecklistSummary.vue'
@@ -68,8 +66,9 @@ import {useGlobalNow} from '@/composables/useGlobalNow'
 import type {AttentionCard} from '@/composables/useHomeBoards'
 import {PRIORITIES} from '@/constants/priorities'
 import {bucketAgeLevel} from '@/helpers/bucketAgeLevel'
+import {taskDueLevel} from '@/helpers/taskDueLevel'
 import {taskSleepDays} from '@/helpers/taskSleep'
-import {formatDateLong, formatDisplayDate} from '@/helpers/time/formatDate'
+import {formatDateLong} from '@/helpers/time/formatDate'
 import {formatShortDuration} from '@/helpers/time/formatShortDuration'
 
 const props = defineProps<{
@@ -90,9 +89,7 @@ const ageLevel = computed(() => bucketAgeLevel(enteredAt.value, now.value))
 
 const sleepDays = computed(() => taskSleepDays(props.card.task, now.value))
 
-const hasDueDate = computed(() => new Date(props.card.task.due_date ?? 0).getTime() > 0)
-const isOverdue = computed(() => hasDueDate.value
-	&& new Date(props.card.task.due_date ?? 0).getTime() <= now.value.getTime())
+const dueLevel = computed(() => taskDueLevel(props.card.task, now.value))
 </script>
 
 <style lang="scss" scoped>
@@ -163,13 +160,5 @@ const isOverdue = computed(() => hasDueDate.value
 .home-attention-card__title {
 	font-weight: 600;
 	word-break: break-word;
-}
-
-.home-attention-card__due {
-	color: var(--text-muted);
-
-	&.is-overdue {
-		color: var(--danger-text);
-	}
 }
 </style>

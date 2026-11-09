@@ -158,4 +158,16 @@ describe('SingleTaskInProject', () => {
 			expect(renderedTaskIds(mountTree(tasks))).toEqual([1, 2, 3, 4, 5, 6])
 		})
 	})
+
+	it.each([
+		['done', true, false],
+		['not done', false, true],
+	])('shows the due date of a task that is %s: %s', (_label, done, shown) => {
+		const wrapper = mount(SingleTaskInProject, {
+			props: {theTask: {...theTask, done, due_date: new Date(Date.now() + 5 * 86_400_000).toISOString()}},
+			global: globalOptions(),
+		})
+
+		expect(wrapper.find('.dueDate').exists()).toBe(shown)
+	})
 })

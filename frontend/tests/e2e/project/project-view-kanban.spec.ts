@@ -742,6 +742,34 @@ test.describe('Project View Kanban', () => {
 		await expect(startedCard.locator('[data-cy="sleepBadge"]')).toHaveCount(0)
 	})
 
+	test('Rates the due date by urgency and hides it on a done card', async ({authenticatedPage: page}) => {
+		const day = 86_400_000
+		const cards = [
+			{id: 1, title: 'Due soon card', done: false, due_date: new Date(Date.now() + 10 * day)},
+			{id: 2, title: 'Done card', done: true, due_date: new Date(Date.now() + 10 * day)},
+		]
+		for (const [i, card] of cards.entries()) {
+			await TaskFactory.create(1, {
+				...card,
+				project_id: 1,
+				due_date: card.due_date.toISOString(),
+			}, i === 0)
+			await TaskBucketFactory.create(1, {
+				task_id: card.id,
+				bucket_id: buckets[0].id,
+				project_view_id: buckets[0].project_view_id,
+			}, i === 0)
+		}
+		await page.goto('/projects/1/4')
+
+		const soonCard = page.locator('.kanban .kanban-card').filter({hasText: cards[0].title})
+		await expect(soonCard.locator('.due-date.is-soon')).toBeVisible()
+
+		const doneCard = page.locator('.kanban .kanban-card').filter({hasText: cards[1].title})
+		await expect(doneCard).toBeVisible()
+		await expect(doneCard.locator('.due-date')).toHaveCount(0)
+	})
+
 	test('Shows the time in the bucket and resets it when the card moves to another bucket', async ({authenticatedPage: page, apiContext, userToken}) => {
 		const headers = {Authorization: `Bearer ${userToken}`}
 		const [task] = await TaskFactory.create(1, {project_id: 1})
@@ -765,7 +793,7 @@ test.describe('Project View Kanban', () => {
 		await expect(page.locator('.kanban .bucket:nth-child(2) .tasks')).toContainText(task.title)
 		await expect(timeInBucket).toContainText('1 min')
 
-		const board = await apiContext.get(`/api/v2/projects/1/views/4/buckets/tasks`, {headers})
+		const board = await apiContext.get('/api/v2/projects/1/views/4/buckets/tasks', {headers})
 		expect(board.ok()).toBeTruthy()
 		const stored = (await board.json()).items
 			.flatMap(bucket => bucket.tasks ?? [])

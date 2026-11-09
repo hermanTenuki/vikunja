@@ -92,7 +92,7 @@
 				/>
 
 				<Popup
-					v-else-if="task.due_date && +new Date(task.due_date) > 0"
+					v-else-if="dueLevel !== null"
 					placement="bottom-start"
 					:anchor="dueDateTriggerEl"
 					sheet-on-mobile
@@ -256,6 +256,7 @@ import {useIntervalFn} from '@vueuse/core'
 import {playPopSound} from '@/helpers/playPop'
 import {isEditorContentEmpty} from '@/helpers/editorContentEmpty'
 import {taskSleepDays} from '@/helpers/taskSleep'
+import {taskDueLevel} from '@/helpers/taskDueLevel'
 import {TASK_REPEAT_MODES} from '@/types/IRepeatMode'
 import {useGlobalNow} from '@/composables/useGlobalNow'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
@@ -360,6 +361,7 @@ const isOverdue = computed(() => (
 ))
 
 const sleepDays = computed(() => taskSleepDays(task.value, now.value))
+const dueLevel = computed(() => taskDueLevel(task.value, now.value))
 
 let oldTask: ITask
 

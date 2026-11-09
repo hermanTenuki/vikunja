@@ -12,7 +12,7 @@
 		:style="{'background-color': color ?? undefined}"
 		:data-task-id="task.id"
 		:data-project-id="task.project_id"
-		:data-is-overdue="isOverdue || undefined"
+		:data-is-overdue="dueLevel === 'overdue' || undefined"
 		@click.exact="openTaskDetail()"
 		@click.ctrl="() => toggleTaskDone(task)"
 		@click.meta="() => toggleTaskDone(task)"
@@ -44,22 +44,12 @@
 					:start-date="task.start_date!"
 					:days="sleepDays"
 				/>
-				<span
-					v-else-if="new Date(task.due_date ?? 0).getTime() > 0"
-					v-tooltip="formatDateLong(task.due_date)"
+				<DueDateBadge
+					v-else-if="dueLevel"
 					class="due-date"
-				>
-					<span class="icon">
-						<OverdueIndicator v-if="isOverdue" />
-						<Icon
-							v-else
-							:icon="['far', 'calendar-alt']"
-						/>
-					</span>
-					<time :datetime="formatISO(task.due_date)">
-						{{ formatDisplayDate(task.due_date) }}
-					</time>
-				</span>
+					:due-date="task.due_date!"
+					:level="dueLevel"
+				/>
 			</div>
 			
 			<h3>
@@ -150,7 +140,7 @@ import {useI18n} from 'vue-i18n'
 import {useGlobalNow} from '@/composables/useGlobalNow'
 
 import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
-import OverdueIndicator from '@/components/tasks/partials/OverdueIndicator.vue'
+import DueDateBadge from '@/components/tasks/partials/DueDateBadge.vue'
 import SleepBadge from '@/components/tasks/partials/SleepBadge.vue'
 import ProgressBar from '@/components/misc/ProgressBar.vue'
 import Done from '@/components/misc/Done.vue'
@@ -165,9 +155,10 @@ import {canPreviewImage} from '@/helpers/attachmentPreview'
 import {fetchAttachmentUrl, releaseAttachmentUrl} from '@/helpers/attachments'
 import {ApiError} from '@/client/problem'
 
-import {formatDateLong, formatDisplayDate, formatISO} from '@/helpers/time/formatDate'
+import {formatDateLong} from '@/helpers/time/formatDate'
 import {formatShortDuration} from '@/helpers/time/formatShortDuration'
 import {taskSleepDays} from '@/helpers/taskSleep'
+import {taskDueLevel} from '@/helpers/taskDueLevel'
 import {colorIsDark} from '@/helpers/color/colorIsDark'
 import {useUpdateTaskMutation} from '@/client/queries/taskMutations'
 import AssigneeList from '@/components/tasks/partials/AssigneeList.vue'
@@ -208,12 +199,7 @@ const projectTitle = computed(() => {
 const showTaskPosition = computed(() => window.DEBUG_TASK_POSITION)
 
 const {now} = useGlobalNow()
-const isOverdue = computed(() => (
-	!props.task.done &&
-	props.task.due_date !== null &&
-	new Date(props.task.due_date ?? 0).getTime() > 0 &&
-	new Date(props.task.due_date ?? 0).getTime() <= now.value.getTime()
-))
+const dueLevel = computed(() => taskDueLevel(props.task, now.value))
 
 const sleepDays = computed(() => taskSleepDays(props.task, now.value))
 
@@ -379,15 +365,6 @@ $task-background: var(--white);
 		align-items: center;
 		padding: 0 .25rem;
 		font-size: .85rem;
-
-		.icon {
-			margin-inline-end: .25rem;
-		}
-
-	}
-
-	&[data-is-overdue] .due-date {
-		color: var(--danger-text);
 	}
 
 	.label-wrapper .tag {
@@ -440,11 +417,19 @@ $task-background: var(--white);
 	}
 
 	.footer .icon,
-	.due-date,
 	.priority-label {
 		background: var(--grey-100);
+	}
+
+	.footer .icon,
+	.due-date,
+	.priority-label {
 		border-radius: $radius;
 		padding: 0 .5rem;
+	}
+
+	.due-date.is-plain {
+		background: var(--grey-100);
 	}
 
 	.task-id, .project-title {
@@ -471,7 +456,7 @@ $task-background: var(--white);
 		color: #000000; // pure black, not grey-800: guarantees 4.5:1 at the luminance flip point
 
 		.footer .icon,
-		.due-date,
+		.due-date.is-plain,
 		.priority-label {
 			background: hsl(220, 13%, 91%);
 		}
@@ -491,7 +476,7 @@ $task-background: var(--white);
 		color: var(--white);
 
 		.footer .icon,
-		.due-date,
+		.due-date.is-plain,
 		.priority-label {
 			background: hsl(215, 27.9%, 16.9%); // grey-800
 		}
@@ -512,7 +497,6 @@ $task-background: var(--white);
 		}
 
 		// var(--danger-text)/PriorityLabel's --danger-text fail on the dark grey-800 chip bg; brightened red keeps hue/sat, hits >= 4.5:1
-		&[data-is-overdue] .due-date,
 		.priority-label.high-priority {
 			color: hsl(var(--danger-h), var(--danger-s), 68%);
 		}
