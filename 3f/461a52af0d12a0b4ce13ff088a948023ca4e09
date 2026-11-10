@@ -1,0 +1,66 @@
+frontend/src/components/tasks/partials/PrioritySelect.vue
+  s_b4603c16cbd962::t_3dacbf09e76ced 2-11,13-60,64-65,67-79,90-116,118-144
+frontend/src/components/home/HomeAttentionCard.test.ts
+  s_b4603c16cbd962::t_7ec35a58e43240 99-101,104-105,111-114
+  s_b4603c16cbd962::t_18bddb1588c04c 115-116
+frontend/src/components/tasks/partials/PrioritySelect.test.ts
+  s_b4603c16cbd962::t_a1de7c17fbc83b 17
+  s_b4603c16cbd962::t_7ec35a58e43240 1-16,18-107
+frontend/tests/e2e/project/project-view-table.spec.ts
+  s_b4603c16cbd962::t_dc2f066a71d35d 72-76
+frontend/src/views/tasks/TaskDetailView.vue
+  s_b4603c16cbd962::t_aabd6607f02846 132,1099
+  s_b4603c16cbd962::t_3dacbf09e76ced 1133-1136
+frontend/tests/e2e/task/task.spec.ts
+  s_b4603c16cbd962::t_dc2f066a71d35d 675-677,1394-1396,1399-1408,1413-1415
+  s_b4603c16cbd962::t_f66856afcbd0e7 1409-1412
+frontend/src/constants/priorities.ts
+  s_b4603c16cbd962::t_f028528dc5a2fd 13-28,30-46
+  s_b4603c16cbd962::t_5bced8d5b9b293 29
+  s_cf8b1cb08c73f6::t_9802f743e23886 1-2
+frontend/tests/e2e/project/project-view-kanban.spec.ts
+  s_b4603c16cbd962::t_dc2f066a71d35d 335-359
+frontend/src/components/tasks/partials/PriorityLabel.test.ts
+  s_b4603c16cbd962::t_b6dce21c009edd 18
+  s_b4603c16cbd962::t_c00353d0ce9707 15-17,19,26
+  s_b4603c16cbd962::t_5a51a04848e783 56
+  s_b4603c16cbd962::t_7ec35a58e43240 1-14,20-25,27-55,57-79
+frontend/src/i18n/lang/ru-RU.json
+  s_b4603c16cbd962::t_f028528dc5a2fd 1128-1132
+frontend/src/helpers/userSettings.ts
+  s_b4603c16cbd962::t_5b047633931810 11
+  s_b4603c16cbd962::t_f028528dc5a2fd 80
+frontend/src/components/tasks/partials/KanbanCard.vue
+  s_b4603c16cbd962::t_f4e28b57d02ea9 84,464,466-480,508-522
+  s_b4603c16cbd962::t_324c0baa72f564 465
+frontend/src/components/misc/Icon.ts
+  s_b4603c16cbd962::t_f028528dc5a2fd 4,7,37,138,219,221
+frontend/src/components/misc/Dropdown.vue
+  s_b4603c16cbd962::t_a75e02aa796a49 160-168
+frontend/src/components/tasks/partials/PriorityLabel.vue
+  s_b4603c16cbd962::t_f4e28b57d02ea9 3-4,6-8,10-18,25-27,29-30,33,36,39,42-44,46,51-60,63-71,73-90,93-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f461a52af0d12a0b4ce13ff088a948023ca4e09",
+  "prompts": {},
+  "sessions": {
+    "s_b4603c16cbd962": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "336b5eee-87ec-440d-883f-ed80c0609f62",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    },
+    "s_cf8b1cb08c73f6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a457635ef3c6d8b03",
+        "model": "unknown"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
