@@ -1,8 +1,10 @@
 import {library} from '@fortawesome/fontawesome-svg-core'
 import {
 	faAlignLeft,
+	faAngleDown,
 	faAngleLeft,
 	faAngleRight,
+	faAnglesDown,
 	faAnglesUp,
 	faArchive,
 	faArrowLeft,
@@ -32,6 +34,7 @@ import {
 	faDownload,
 	faEllipsisH,
 	faEllipsisV,
+	faEquals,
 	faExclamation,
 	faExclamationCircle,
 	faEye,
@@ -132,6 +135,7 @@ library.add(faCode)
 library.add(faQuoteRight)
 library.add(faListUl)
 library.add(faAlignLeft)
+library.add(faAngleDown)
 library.add(faAngleLeft)
 library.add(faAngleRight)
 library.add(faArchive)
@@ -212,7 +216,9 @@ library.add(faArrowDownShortWide)
 library.add(faArrowUpFromBracket)
 library.add(faArrowUpShortWide)
 library.add(faX)
+library.add(faAnglesDown)
 library.add(faAnglesUp)
+library.add(faEquals)
 library.add(faBolt)
 library.add(faArrowTurnDown)
 library.add(faListCheck)

@@ -8,7 +8,7 @@ import type {IRelationKind} from '@/types/IRelationKind'
 import type {TaskReminder, UserGeneralSettings} from '@/client/generated'
 import {PrefixMode} from '@/modules/quickAddMagic'
 import {DEFAULT_PROJECT_VIEW_SETTINGS} from '@/constants/projectView'
-import {PRIORITIES} from '@/constants/priorities'
+import {PRIORITY_LEVELS} from '@/constants/priorities'
 import {DATE_DISPLAY} from '@/constants/dateDisplay'
 import {TIME_FORMAT} from '@/constants/timeFormat'
 import {RELATION_KIND} from '@/types/IRelationKind'
@@ -77,7 +77,7 @@ export function defaultFrontendSettings(): FrontendSettings {
 		allow_icon_changes: true,
 		filter_id_used_on_overview: null,
 		default_view: DEFAULT_PROJECT_VIEW_SETTINGS.FIRST,
-		minimum_priority: PRIORITIES.MEDIUM,
+		minimum_priority: PRIORITY_LEVELS.NEGLIGIBLE,
 		date_display: DATE_DISPLAY.RELATIVE,
 		time_format: TIME_FORMAT.HOURS_24,
 		default_task_relation_type: RELATION_KIND.RELATED,

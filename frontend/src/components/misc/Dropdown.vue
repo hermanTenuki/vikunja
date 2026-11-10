@@ -157,6 +157,15 @@ watch(open, (isOpen) => {
 	}
 })
 
+// Idempotent, unlike toggleOpen: used to open the menu from outside.
+function openMenu() {
+	open.value = true
+}
+
+defineExpose({
+	open: openMenu,
+})
+
 onClickOutside(dropdown, (e) => {
 	if (!open.value) {
 		return

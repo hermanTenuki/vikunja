@@ -81,8 +81,7 @@
 				<Labels :labels="task.labels" />
 				<PriorityLabel
 					:priority="task.priority"
-					:done="task.done"
-					class="is-inline-flex is-align-items-center"
+					icon-only
 				/>
 				<span
 					v-if="task.attachments.length > 0"
@@ -399,13 +398,6 @@ $task-background: var(--white);
 
 		.priority-label {
 			font-size: .75rem;
-			padding: 0 .5rem 0 .25rem;
-
-			.icon {
-				block-size: 1rem;
-				padding: 0 .25rem;
-				margin-block-start: 0;
-			}
 		}
 	}
 
@@ -469,6 +461,23 @@ $task-background: var(--white);
 		.footer :deep(.checklist-summary) {
 			color: inherit;
 		}
+
+		// Opaque icon colors on the light grey chip above: all hold >= 3:1 except faint, which stays muted (about 2.8:1) on purpose.
+		.priority-label.is-faint :deep(.priority-label__icon) {
+			color: hsl(217, 10%, 55%);
+		}
+
+		.priority-label.is-muted :deep(.priority-label__icon) {
+			color: hsl(215, 14%, 38%);
+		}
+
+		.priority-label.is-warning :deep(.priority-label__icon) {
+			color: hsl(38, 95%, 33%);
+		}
+
+		.priority-label.is-danger :deep(.priority-label__icon) {
+			color: hsl(3, 85%, 44%);
+		}
 	}
 
 	&.has-light-text {
@@ -496,9 +505,21 @@ $task-background: var(--white);
 			color: inherit;
 		}
 
-		// var(--danger-text)/PriorityLabel's --danger-text fail on the dark grey-800 chip bg; brightened red keeps hue/sat, hits >= 4.5:1
-		.priority-label.high-priority {
-			color: hsl(var(--danger-h), var(--danger-s), 68%);
+		// The component's own tone colors are tuned for the page background, not for the dark grey-800 chip.
+		.priority-label.is-faint :deep(.priority-label__icon) {
+			color: hsl(217, 10%, 58%);
+		}
+
+		.priority-label.is-muted :deep(.priority-label__icon) {
+			color: hsl(216, 12%, 72%);
+		}
+
+		.priority-label.is-warning :deep(.priority-label__icon) {
+			color: hsl(45, 95%, 58%);
+		}
+
+		.priority-label.is-danger :deep(.priority-label__icon) {
+			color: hsl(3, 100%, 70%);
 		}
 	}
 }

@@ -96,13 +96,22 @@ describe('HomeAttentionCard', () => {
 	})
 
 	it.each([
-		[PRIORITIES.MEDIUM, false],
+		[PRIORITIES.UNSET, false],
+		[PRIORITIES.LOW, true],
+		[PRIORITIES.MEDIUM, true],
 		[PRIORITIES.HIGH, true],
 		[PRIORITIES.URGENT, true],
-	])('shows the priority %i label only from high up: %s', (priority, shown) => {
+		[PRIORITIES.DO_NOW, true],
+	])('shows the priority label for priority %i: %s', (priority, shown) => {
 		const wrapper = mountCard(buildCard({priority}))
 
 		expect(wrapper.find('.priority-label').exists()).toBe(shown)
+	})
+
+	it('shows the priority label of a completed task', () => {
+		const wrapper = mountCard(buildCard({priority: PRIORITIES.DO_NOW, done: true}))
+
+		expect(wrapper.find('.priority-label').exists()).toBe(true)
 	})
 
 	it.each([

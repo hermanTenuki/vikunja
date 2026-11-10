@@ -69,7 +69,11 @@ test.describe('Project View Table', () => {
 				has: page.getByRole('link', {name: task.title, exact: true}),
 			})
 			await expect(row).toBeVisible()
-			await expect(row.locator('.priority-label')).toHaveText(priorities[task.priority])
+			if (task.priority === 0) {
+				await expect(row.locator('.priority-label')).toHaveCount(0)
+			} else {
+				await expect(row.locator('.priority-label')).toHaveText(priorities[task.priority])
+			}
 		}
 	})
 

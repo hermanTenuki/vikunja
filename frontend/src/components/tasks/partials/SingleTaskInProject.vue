@@ -55,7 +55,6 @@
 	
 					<PriorityLabel
 						:priority="task.priority ?? 0"
-						:done="task.done"
 						class="pis-2 mie-1"
 					/>
 

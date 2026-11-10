@@ -332,6 +332,31 @@ test.describe('Project View Kanban', () => {
 		await expect(page.locator('.kanban .bucket:nth-child(2) .tasks')).not.toContainText(tasks[0].title)
 	})
 
+	test('Shows an icon-only priority badge on a completed task and none for priority 0', async ({authenticatedPage: page}) => {
+		const tasks = await TaskFactory.create(2, {
+			id: '{increment}',
+			project_id: 1,
+			title: (i: number) => `Badge task ${i}`,
+			priority: (i: number) => i === 1 ? 5 : 0,
+			done: (i: number) => i === 1,
+		})
+		for (const t of tasks) {
+			await TaskBucketFactory.create(1, {
+				task_id: t.id,
+				bucket_id: buckets[0].id,
+				project_view_id: buckets[0].project_view_id,
+			}, false)
+		}
+		await page.goto('/projects/1/4')
+
+		const withPriority = page.locator('.kanban .bucket .tasks .task').filter({hasText: 'Badge task 1'})
+		await expect(withPriority.locator('.priority-label[aria-label="Priority: DO NOW"]')).toBeVisible()
+		await expect(withPriority.locator('.priority-label__text')).toHaveCount(0)
+		const unset = page.locator('.kanban .bucket .tasks .task').filter({hasText: 'Badge task 2'})
+		await expect(unset).toBeVisible()
+		await expect(unset.locator('.priority-label')).toHaveCount(0)
+	})
+
 	test('Should navigate to the task when the task card is clicked', async ({authenticatedPage: page}) => {
 		const tasks = await createTaskWithBuckets(buckets, 5)
 		await page.goto('/projects/1/4')

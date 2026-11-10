@@ -129,7 +129,7 @@
 									{{ $t('task.attributes.priority') }}
 								</div>
 								<PrioritySelect
-									:ref="e => setFieldRef('priority', e)"
+									:ref="e => { setFieldRef('priority', e); prioritySelect = e as any }"
 									v-model="task.priority"
 									:disabled="!canWrite"
 									@update:modelValue="setPriority"
@@ -1096,6 +1096,7 @@ const activeFieldElements: { [id in FieldType]: HTMLElement | null } = reactive(
 const dueDatePicker = useTemplateRef<InstanceType<typeof Datepicker>>('dueDatePicker')
 const startDatePicker = useTemplateRef<InstanceType<typeof Datepicker>>('startDatePicker')
 const endDatePicker = useTemplateRef<InstanceType<typeof Datepicker>>('endDatePicker')
+const prioritySelect = ref<InstanceType<typeof PrioritySelect> | null>(null)
 
 function setFieldRef(name: FieldType, e: Element | ComponentPublicInstance | null) {
 	const element = e instanceof Element ? e : e?.$el
@@ -1129,6 +1130,10 @@ function setFieldActive(fieldName: keyof typeof activeFields) {
 		scrollIntoView(el, datepicker ? 'instant' : 'smooth')
 
 		datepicker?.open()
+
+		if (fieldName === 'priority') {
+			prioritySelect.value?.open()
+		}
 	})
 }
 

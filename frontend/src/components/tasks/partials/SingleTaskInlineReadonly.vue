@@ -21,7 +21,6 @@
 
 			<PriorityLabel
 				:priority="task.priority ?? 0"
-				:done="task.done"
 			/>
 
 			<!-- Show any parent tasks to make it clear this task is a sub task of something -->

@@ -34,9 +34,7 @@
 		<span class="home-attention-card__title">{{ card.task.title }}</span>
 		<span class="home-attention-card__footer">
 			<PriorityLabel
-				v-if="card.task.priority >= PRIORITIES.HIGH"
 				:priority="card.task.priority"
-				:done="card.task.done"
 				:show-all="true"
 			/>
 			<DueDateBadge
@@ -64,7 +62,6 @@ import CommentCount from '@/components/tasks/partials/CommentCount.vue'
 
 import {useGlobalNow} from '@/composables/useGlobalNow'
 import type {AttentionCard} from '@/composables/useHomeBoards'
-import {PRIORITIES} from '@/constants/priorities'
 import {bucketAgeLevel} from '@/helpers/bucketAgeLevel'
 import {taskDueLevel} from '@/helpers/taskDueLevel'
 import {taskSleepDays} from '@/helpers/taskSleep'

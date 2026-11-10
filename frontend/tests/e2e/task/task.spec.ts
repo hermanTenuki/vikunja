@@ -672,7 +672,9 @@ test.describe('Task', () => {
 				r.url().includes(`/tasks/${task.id}`) && r.request().method() === 'PATCH',
 			)
 			await page.locator('.task-view .action-buttons .button').filter({hasText: 'Set Priority'}).click()
-			await page.locator('.task-view .columns.details .column').filter({hasText: 'Priority'}).locator('.select select').selectOption('Urgent')
+			const priorityField = page.locator('.task-view .columns.details .column').filter({hasText: 'Priority'})
+			await expect(priorityField.locator('.dropdown-menu')).toBeVisible()
+			await priorityField.getByRole('button', {name: 'Urgent', exact: true}).click()
 			await saved
 
 			const resp = await apiContext.get(`tasks/${task.id}`, {
@@ -1389,10 +1391,28 @@ test.describe('Task', () => {
 			await page.goto(`/tasks/${tasks[0].id}`)
 
 			await page.locator('.task-view .action-buttons .button').filter({hasText: 'Set Priority'}).click()
-			await page.locator('.task-view .columns.details .column').filter({hasText: 'Priority'}).locator('.select select').selectOption('Urgent')
+			const priorityField = page.locator('.task-view .columns.details .column').filter({hasText: 'Priority'})
+			await expect(priorityField.locator('.dropdown-menu')).toBeVisible()
+			await priorityField.getByRole('button', {name: 'Urgent', exact: true}).click()
 			await expect(page.locator('.global-notification')).toContainText('Success')
 
-			await expect(page.locator('.task-view .columns.details .column').filter({hasText: 'Priority'}).locator('.select select')).toHaveValue('4')
+			await page.reload()
+			await expect(priorityField.locator('.priority-select__trigger')).toContainText('Urgent')
+		})
+
+		test('Opens the priority menu with the P shortcut', async ({authenticatedPage: page}) => {
+			const tasks = await TaskFactory.create(1, {
+				id: 1,
+			})
+			await page.goto(`/tasks/${tasks[0].id}`)
+
+			await page.waitForLoadState('networkidle')
+
+			await page.locator('.task-view .action-buttons').click()
+			await page.locator('body').press('p')
+
+			const priorityField = page.locator('.task-view .columns.details .column').filter({hasText: 'Priority'})
+			await expect(priorityField.locator('.dropdown-menu')).toBeVisible()
 		})
 
 		test('Can set the progress for a task', async ({authenticatedPage: page}) => {

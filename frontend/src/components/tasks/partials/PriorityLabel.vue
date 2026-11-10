@@ -1,72 +1,110 @@
 <template>
 	<span
-		v-if="!done && (showAll || priority >= minimumPriority)"
-		:class="{
-			'negligible': priority <= priorities.LOW,
-			'not-so-high': priority > priorities.LOW && priority < priorities.HIGH,
-			'high-priority': priority >= priorities.HIGH
-		}"
+		v-if="entry && (showAll || priority >= minimumPriority)"
+		v-tooltip="iconOnly ? label : undefined"
 		class="priority-label"
+		:class="[`is-${entry.tone}`, {'is-icon-only': iconOnly}]"
+		:role="iconOnly ? 'img' : undefined"
+		:aria-label="iconOnly ? `${$t('task.attributes.priority')}: ${label}` : undefined"
 	>
-		<span class="icon">
-			<Icon
-				v-if="priority >= priorities.HIGH"
-				icon="exclamation-circle"
-			/>
-			<Icon
-				v-else
-				icon="exclamation"
-			/>
-		</span>
-		<span>
-			<template v-if="priority === priorities.UNSET">{{ $t('task.priority.unset') }}</template>
-			<template v-if="priority === priorities.LOW">{{ $t('task.priority.low') }}</template>
-			<template v-if="priority === priorities.MEDIUM">{{ $t('task.priority.medium') }}</template>
-			<template v-if="priority === priorities.HIGH">{{ $t('task.priority.high') }}</template>
-			<template v-if="priority === priorities.URGENT">{{ $t('task.priority.urgent') }}</template>
-			<template v-if="priority === priorities.DO_NOW">{{ $t('task.priority.doNow') }}</template>
+		<Icon
+			:icon="entry.icon"
+			class="priority-label__icon"
+		/>
+		<span
+			v-if="!iconOnly"
+			class="priority-label__text"
+		>
+			{{ label }}
 		</span>
 	</span>
 </template>
 
 <script setup lang="ts">
 import {computed} from 'vue'
-import {PRIORITIES as priorities} from '@/constants/priorities'
+import {useI18n} from 'vue-i18n'
+
+import {PRIORITY_LEVELS, getPriorityScaleEntry} from '@/constants/priorities'
 import {useAuthStore} from '@/stores/auth'
-	
-withDefaults(defineProps<{
+
+const props = withDefaults(defineProps<{
 	priority: number,
 	showAll?: boolean,
-	done?: boolean
+	iconOnly?: boolean,
 }>(), {
 	showAll: false,
-	done: false,
+	iconOnly: false,
 })
 
+const {t} = useI18n({useScope: 'global'})
 const authStore = useAuthStore()
 
+const entry = computed(() => getPriorityScaleEntry(props.priority))
+const label = computed(() => entry.value ? t(entry.value.labelKey) : '')
+
 const minimumPriority = computed(() => {
-	return authStore.settings.frontend_settings.minimum_priority || priorities.MEDIUM
+	return authStore.settings.frontend_settings.minimum_priority || PRIORITY_LEVELS.NEGLIGIBLE
 })
 </script>
 
 <style lang="scss" scoped>
-.high-priority {
-	color: var(--danger-text);
+// Opaque icon colors on purpose: --white is overridden on cards with a custom color.
+.priority-label {
+	display: inline-flex;
+	align-items: center;
+	gap: .25rem;
+	min-block-size: 1.5rem; // Same height as the Bulma .icon chips next to it
+	padding: 0 .5rem;
+	border-radius: $radius;
+	background: var(--grey-100);
+	white-space: nowrap;
 	inline-size: auto !important; // To override the width set in tasks
+
+	&.is-faint {
+		.priority-label__icon {
+			color: hsl(217, 10%, 70%);
+		}
+
+		.priority-label__text {
+			color: var(--grey-500);
+		}
+	}
+
+	&.is-muted .priority-label__icon {
+		color: hsl(215, 14%, 42%);
+	}
+
+	// Saturated on purpose: the pale --warning is unreadable on the light grey chip.
+	&.is-warning .priority-label__icon {
+		color: hsl(40, 95%, 38%);
+	}
+
+	&.is-danger {
+		.priority-label__icon {
+			color: hsl(3, 85%, 46%);
+		}
+
+		.priority-label__text {
+			font-weight: 600;
+		}
+	}
 }
 
-.not-so-high {
-	color: var(--warning);
-}
+.dark .priority-label {
+	&.is-faint .priority-label__icon {
+		color: hsl(217, 10%, 46%);
+	}
 
-.negligible {
-	color: var(--info);
-}
+	&.is-muted .priority-label__icon {
+		color: hsl(216, 12%, 72%);
+	}
 
-.icon {
-	vertical-align: top;
-	inline-size: auto !important;
-	padding-inline-end: .5rem;
+	&.is-warning .priority-label__icon {
+		color: hsl(45, 95%, 58%);
+	}
+
+	&.is-danger .priority-label__icon {
+		color: hsl(3, 100%, 70%);
+	}
 }
 </style>
