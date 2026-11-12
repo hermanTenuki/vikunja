@@ -1,0 +1,29 @@
+README.md
+  s_b38e2af76706c4::t_d40f3e5a43954c 1,12,14,17,19,31,47-48,53-54,62,64,68,82-84,86,94
+  s_b38e2af76706c4::t_058ce94d06d086 3,5,9,11,13,15-16,21,23,25,33,35,41,43,45,52,55-58,63,66,69-70,80
+  s_b38e2af76706c4::t_108a509725be82 7,60,65,67,71-76,78-79,81,85
+  s_b38e2af76706c4::t_8835939ab86215 10,27-29,37-40,46,49-50,77
+  s_b38e2af76706c4::t_a3031b8671bcaa 95
+.github/workflows/fork-image.yml
+  s_b38e2af76706c4::t_ed81458a7eaa7d 1-65
+deploy/.env.example
+  s_b38e2af76706c4::t_ed81458a7eaa7d 4
+deploy/docker-compose.yml
+  s_b38e2af76706c4::t_ed81458a7eaa7d 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f3bae3df81855b14c9d70ec0006b20cfb2e533b",
+  "prompts": {},
+  "sessions": {
+    "s_b38e2af76706c4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8af3fb7d-5640-4283-83b3-6d4956dcccc8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
