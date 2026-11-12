@@ -1,0 +1,19 @@
+.github/workflows/pers-image.yml
+  s_cf3aa30e0ebded::t_5f4365f7becba8 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8e8fd02691f77c0b4fe13ed65d11df9c44b3a2f4",
+  "prompts": {},
+  "sessions": {
+    "s_cf3aa30e0ebded": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f075cbf2-b3b8-4460-9701-f00b21bf171e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
