@@ -1,5 +1,5 @@
 # Vikunja from this fork (branch v2.8.0-dev), SQLite.
-# Image is built by .github/workflows/pers-image.yml. Deploy steps are in README.md.
+# Image is built by .github/workflows/fork-image.yml.
 name: vikunja
 
 services:

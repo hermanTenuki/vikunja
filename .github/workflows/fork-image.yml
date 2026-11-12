@@ -1,6 +1,6 @@
 # Fork-only workflow: builds the Docker image of this fork and pushes it to GHCR.
-# Trigger: publish a release whose tag is pers-N (target branch v2.8.0-dev).
-# Tags pushed: pers-N (immutable, for rollback) and latest.
+# Trigger: publish a release whose tag is build-N (target branch v2.8.0-dev).
+# Tags pushed: build-N (immutable, for rollback) and latest.
 name: Build fork image
 
 on:

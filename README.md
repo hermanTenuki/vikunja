@@ -1,65 +1,97 @@
-<img src="https://vikunja.io/images/vikunja-logo.svg" alt="" style="display: block;width: 50%;margin: 0 auto;" width="50%"/>
+# Vikunja — форк v2.8.0
 
-[![Build Status](https://github.com/go-vikunja/vikunja/actions/workflows/ci.yml/badge.svg)](https://github.com/go-vikunja/vikunja/actions/workflows/ci.yml)
-[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg)](LICENSE)
-[![Install](https://img.shields.io/badge/download-v2.8.0-brightgreen.svg)](https://vikunja.io/docs/installing)
-[![Docker Pulls](https://img.shields.io/docker/pulls/vikunja/vikunja.svg)](https://hub.docker.com/r/vikunja/vikunja/)
-[![OpenAPI Docs](https://img.shields.io/badge/swagger-docs-brightgreen.svg)](https://try.vikunja.io/api/v2/docs)
+Форк [go-vikunja/vikunja](https://github.com/go-vikunja/vikunja) от тега `v2.8.0` (`6e788bf87`). Свои изменения живут в ветке `v2.8.0-dev`, а `main` — зеркало upstream.
 
-# Vikunja
+Документация upstream — [vikunja.io/docs](https://vikunja.io/docs/). Правила работы с кодом — в [`CLAUDE.md`](CLAUDE.md) и [`.agents/docs/`](.agents/docs/).
 
-> The task manager you actually own. 
+## Доработки
 
-If Vikunja is useful to you, please consider [supporting the project](https://vikunja.io/support/). You can [buy a coffee](https://www.buymeacoffee.com/kolaente), [sponsor on GitHub](https://github.com/sponsors/kolaente) or buy [a sticker pack](https://vikunja.io/stickers).
-We're also offering [a hosted version of Vikunja](https://vikunja.cloud/) if you want a hassle-free solution for yourself or your team.
-If you or your company needs admin panel, audit logs or time tracking, check out [Vikunja Pro](https://vikunja.io/pro/).
+| Коммит | Что изменено |
+|---|---|
+| `1e9067c43` | На карточке видно, сколько времени она провела в текущей колонке. Миграция БД добавляет поле `task_buckets.entered_at` |
+| `e69be4759` | Задача открывается сразу после создания |
+| `000440d8f` | Главная страница — пульт: карточки из отмеченных колонок, избранные доски, дедлайны. У колонок есть отметка «показывать / скрывать на главной» |
+| `e883f96fc` | Новые карточки появляются внизу колонки или списка |
+| `c27bdac49` | Карточка с датой начала в будущем «спит»; дата окончания больше не заполняется сама |
+| `bad0a430a` | Близкий и просроченный дедлайн подсвечивается |
+| `3f461a52a` | Пять уровней приоритета со значками |
 
-> [!NOTE]
-> For the development of Vikunja, we're using LLM-Assisted coding tools in various parts of the codebase.
-> Most contributions made @tink-bot are built that way.
+## Сборка и деплой
 
-## Table of contents
+Образ собирает workflow [`fork-image.yml`](.github/workflows/fork-image.yml) при публикации релиза с тегом `build-N` на ветке `v2.8.0-dev`. Готовый образ попадает в `ghcr.io/hermantenuki/vikunja` с тегами `build-N` и `latest`.
 
-- [Security Reports](#security-reports)
-- [Features](#features)
-- [Docs](#docs)
-	- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-	- [Unsplash Images](#unsplash-images)
+Версия бинарника считается через `git describe --match 'v*'`, поэтому в форке нужен тег `v2.8.0`. Свои теги не начинаются с `v`, потому что на теги `v*` реагирует upstream-`ci.yml`.
 
-## Security Reports
+Сервер запускает образ через [`deploy/`](deploy/). Переменные задаются в `.env` по образцу `.env.example`, тег образа — в `IMAGE_TAG`. Обновление и откат на другой тег выполняются одной командой:
 
-If you find any security-related issues you don't want to disclose publicly, please use [the contact information on our website](https://vikunja.io/contact/#security).
+```bash
+docker compose pull && docker compose up -d
+```
 
-## Features
+## Дамп
 
-See [the features page](https://vikunja.io/features/) on our website for a more exhaustive list or 
-try it on [try.vikunja.io](https://try.vikunja.io)!
+Все команды запускаются из `deploy/`.
 
-## Docs
+Снять дамп и скопировать его на хост:
 
-* [Installing](https://vikunja.io/docs/installing/)
-* [Build from source](https://vikunja.io/docs/build-from-sources/)
-* [Development setup](https://vikunja.io/docs/development/)
-* [Magefile](https://vikunja.io/docs/magefile/)
-* [Testing](https://vikunja.io/docs/testing/)
+```bash
+NAME=vikunja-dump-$(date +%F-%H%M)
+docker compose exec -T vikunja /app/vikunja/vikunja dump -p /tmp -f "$NAME"
+docker compose cp "vikunja:/tmp/$NAME.zip" ./
+```
 
-All docs can be found on [the Vikunja home page](https://vikunja.io/docs/).
+Восстановить из дампа (текущая БД при этом стирается):
 
-### Roadmap
+```bash
+docker compose stop vikunja
+cp "$NAME.zip" data/db/ && chown 1000:1000 "data/db/$NAME.zip"
+printf 'Yes, I understand\n\n' | docker compose run --rm -T vikunja restore "/db/$NAME.zip"
+docker compose start vikunja
+```
 
-See [the roadmap](https://my.vikunja.cloud/share/QFyzYEmEYfSyQfTOmIRSwLUpkFjboaBqQCnaPmWd/auth) (hosted on Vikunja!) for more!
+Особенности:
+- **`-p /tmp` обязателен.** Папка по умолчанию `/app/vikunja/` принадлежит root, и без `-p` дамп падает с `permission denied`.
+- **Имя файла должно быть новым.** Существующий файл дамп не перезаписывает.
+- **Нужен `chown`.** Дамп создаётся с правами `0600`, а после `docker compose cp` его владелец — root.
+- **Версии должны совпадать.** Restore сверяет версию из дампа с версией бинарника, так что дамп восстанавливается только тем же образом `build-N`.
+- **Дамп снимается до обновления образа.** `dump`, как и старт сервера, сначала прогоняет миграции.
+- **В архиве лежит `.env` с секретами.** Копия вне сервера хранится только зашифрованной.
 
-## Contributing
+## Тесты и линтеры
 
-Please check out the contribution guidelines on [the website](https://vikunja.io/docs/development/).
+- Бэкенд: `mage test:web`, `mage test:feature`, `mage test:filter <фильтр>`, `mage lint:fix`.
+- Фронт, в `frontend/`: `pnpm lint:fix`, `pnpm lint:styles:fix`, `pnpm typecheck`.
+- e2e: `mage test:e2e`.
+
+Подробности — в [`.agents/docs/testing.md`](.agents/docs/testing.md).
+
+## Обновление на новый upstream
+
+Доработки переносятся на новый тег в отдельную ветку, а `v2.8.0-dev` остаётся как есть:
+
+```bash
+git fetch upstream --tags
+git switch main && git merge --ff-only upstream/main && git push origin main
+git branch vNEW-dev v2.8.0-dev
+git rebase --onto vNEW v2.8.0 vNEW-dev
+git push origin vNEW
+```
+
+Перед обновлением сервера снимается дамп. Новые миграции upstream, которые трогают `task_buckets`, могут задеть поле `entered_at`:
+
+```bash
+git diff v2.8.0 vNEW -- pkg/migration | grep task_buckets
+```
+
+---
 
 ## License
 
 Most of this repository is licensed under [AGPL‑3.0‑or‑later](LICENSE).
 The contents of [`desktop/`](desktop/) are licensed under
 [GPL‑3.0‑or‑later](desktop/LICENSE).
+
+Это модифицированная версия Vikunja; исходники изменений — ветка `v2.8.0-dev` этого репозитория.
 
 ### Unsplash Images
 
