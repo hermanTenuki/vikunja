@@ -1,0 +1,26 @@
+# Vikunja from this fork (branch v2.8.0-dev), SQLite.
+# Image is built by .github/workflows/pers-image.yml. Deploy steps are in README.md.
+name: vikunja
+
+services:
+  vikunja:
+    image: ghcr.io/hermantenuki/vikunja:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${VIKUNJA_PORT:-3456}:3456"
+    volumes:
+      # Both directories must be owned by uid 1000, the user the image runs as.
+      - ./data/db:/db
+      - ./data/files:/app/vikunja/files
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 300m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
