@@ -1,0 +1,24 @@
+deploy/docker-compose.yml
+  s_cf3aa30e0ebded::t_2212a3b36e91a9 2-26
+  s_cf3aa30e0ebded::t_b5ed839d4a312f 1
+deploy/.gitignore
+  s_cf3aa30e0ebded::t_e6d465b5ae73f4 1-2
+deploy/.env.example
+  s_cf3aa30e0ebded::t_597f4b93990ff5 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "03f75a0c798d3b15f0fd906eccd9e86d41494b29",
+  "prompts": {},
+  "sessions": {
+    "s_cf3aa30e0ebded": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f075cbf2-b3b8-4460-9701-f00b21bf171e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
