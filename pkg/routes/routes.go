@@ -159,6 +159,13 @@ func NewEcho() *echo.Echo {
 	// downstream (logging, audit) sees the same value.
 	e.Use(middleware.RequestID())
 
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			c.Response().Header().Set("X-Robots-Tag", "noindex")
+			return next(c)
+		}
+	})
+
 	// Logger
 	if config.LogEnabled.GetBool() && config.LogHTTP.GetString() != "off" {
 		httpLogger := log.NewHTTPLogger(config.LogEnabled.GetBool(), config.LogHTTP.GetString(), config.LogHTTPLevel.GetString(), config.LogFormat.GetString())

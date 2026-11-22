@@ -89,6 +89,29 @@ func TestStaticDoesNotHandleAPIRoutes(t *testing.T) {
 	assert.Equal(t, "pong", rec.Body.String())
 }
 
+func TestNoIndexHeader(t *testing.T) {
+	log.InitLogger()
+	e := NewEcho()
+	setupStaticFrontendFilesHandler(e)
+	e.GET("/api/v2/test", func(c *echo.Context) error {
+		return c.String(http.StatusOK, "ok")
+	})
+
+	for _, path := range []string{
+		"/",
+		"/login",
+		"/api/v2/test",
+	} {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+
+			require.Equal(t, http.StatusOK, rec.Code)
+			assert.Equal(t, "noindex", rec.Header().Get("X-Robots-Tag"))
+		})
+	}
+}
+
 func TestInjectAPIURL(t *testing.T) {
 	source, err := os.ReadFile("../../frontend/index.html")
 	require.NoError(t, err)
