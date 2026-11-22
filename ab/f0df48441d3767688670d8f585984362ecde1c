@@ -1,0 +1,21 @@
+pkg/routes/routes.go
+  s_7a29c71860af3e::t_62aedf1bd98282 162-168
+pkg/routes/static_test.go
+  s_7a29c71860af3e::t_62aedf1bd98282 92-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "abf0df48441d3767688670d8f585984362ecde1c",
+  "prompts": {},
+  "sessions": {
+    "s_7a29c71860af3e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2041f-80e1-7253-91bc-0d67d01572ce",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
