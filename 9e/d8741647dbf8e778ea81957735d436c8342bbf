@@ -1,0 +1,21 @@
+deploy/docker-compose.yml
+  s_ab88e366c0472c::t_b9926eafec6c2c 11
+README.md
+  s_ab88e366c0472c::t_b9926eafec6c2c 31-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "9ed8741647dbf8e778ea81957735d436c8342bbf",
+  "prompts": {},
+  "sessions": {
+    "s_ab88e366c0472c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a203f7-a0cc-7543-bddc-72c20e8c2dc5",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Herman Schechkin <itseasy322@gmail.com>"
+    }
+  }
+}
