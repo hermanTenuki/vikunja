@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      - "${VIKUNJA_PORT:-3456}:3456"
+      - "${VIKUNJA_BIND_IP:-127.0.0.1}:${VIKUNJA_PORT:-3456}:3456"
     volumes:
       # Both directories must be owned by uid 1000, the user the image runs as.
       - ./data/db:/db

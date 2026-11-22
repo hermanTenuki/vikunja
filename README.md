@@ -28,6 +28,11 @@
 docker compose pull && docker compose up -d
 ```
 
+За reverse proxy на том же сервере Vikunja доступна по `127.0.0.1:3456` по умолчанию.
+В серверном `.env` задай `VIKUNJA_SERVICE_PUBLICURL=https://vikunja.example.com/` со своим доменом.
+Для личной установки после создания или переноса учётной записи задай `VIKUNJA_SERVICE_ENABLEREGISTRATION=false`.
+Для прямого доступа из LAN задай `VIKUNJA_BIND_IP` равным LAN-адресу сервера и укажи адрес, по которому клиенты открывают Vikunja, в `VIKUNJA_SERVICE_PUBLICURL`.
+
 ## Дамп
 
 Все команды запускаются из `deploy/`.
